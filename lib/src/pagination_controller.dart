@@ -199,6 +199,7 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     final cursor =
         pageIndex == 0 ? null : current.pagesStates[pageIndex - 1].page.cursor;
     final listStream = orErrorWrapper.call(() => onLoadPage(cursor));
+    if (pageIndex >= subscriptions.length) subscriptions.add(null);
     subscriptions[pageIndex] = listStream.listen((res) {
       _emit(_updatePage(pageIndex, res));
     });
