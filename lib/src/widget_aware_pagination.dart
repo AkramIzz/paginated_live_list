@@ -5,18 +5,19 @@ import 'pagination_controller.dart';
 class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
     implements WidgetAwarePagesSubscriptionsHandler<T> {
   final PaginationController controller;
-  final int maximumActiveSubscriptions;
 
   _WidgetAwarePagesSubscriptionsHandlerLruSetImpl(
     this.controller, {
-    this.maximumActiveSubscriptions = 5,
-  }) : _activeSubs = LruSet(maximumActiveSubscriptions) {
+    int maximumActiveSubscriptions,
+  }) : _activeSubs = LruSet(maximumActiveSubscriptions ?? 5) {
     // if the controller already have active subscriptions we pause them all
     // since there's no way to tell which pages are visible.
     // instead of trying to guess, we rely on [onItemInitialized] calls to
     // resume the subscriptions to visible pages
     controller.subscriptions.forEach((sub) => sub.pause());
   }
+
+  int get maximumActiveSubscriptions => _activeSubs.maximumSize;
 
   @override
   void onAppLifecycleChanged(AppLifecycleState state) {
