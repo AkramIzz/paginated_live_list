@@ -149,9 +149,11 @@ class _LivePaginatedListState<T> extends State<LivePaginatedList<T>> {
               itemBuilder: (context, i) {
                 if (i == state.items.length) {
                   if (state.status == ListStatus.loading) {
-                    return Center(child: widget.progressBuilder(context));
+                    return Center(
+                        child: widget.progressBuilder?.call(context) ??
+                            Container());
                   } else if (state.status == ListStatus.end && i == 0) {
-                    return widget.noItemsWidget;
+                    return widget.noItemsWidget ?? Container();
                   } else {
                     return Container();
                   }
