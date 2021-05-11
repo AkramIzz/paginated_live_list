@@ -1,14 +1,22 @@
 # live_paginated_list
 
-A new Flutter package project.
+A live paginated list widget
 
 ## Getting Started
 
-This project is a starting point for a Dart
-[package](https://flutter.dev/developing-packages/),
-a library module containing code that can be shared easily across
-multiple Flutter or Dart projects.
+For usage example see the example directory
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+## Road Map
+
+- [ ] add null safety
+- [ ] add tests
+- [ ] contribution and issues guide
+- [ ] support slivers
+- [ ] support grid view
+- [ ] documentation and examples
+- [ ] update widget with more options and builders:
+  - item, firstPageError, newPageError, oldPageError, firstPageProgress, newPageProgress, oldPageProgress, emptyList, endOfList
+- [ ] refresh: load first page -> remove all pages -> add first page
+- [ ] make WidgetAwarePagesSubscriptionsHandler an opt-in option
+- [ ] lru cache for pages (not subscriptions but actually remove pages from memory)
+- [ ] support item insertion and removal animations (with diffing or with changes supplied by user)
