@@ -108,7 +108,7 @@ class ListState<T> {
 ///
 /// It provides a `BehaviorSubject` interface which is a stream that caches the
 /// latest event and when subscribed to emits the cached event to the listener
-class PaginationController<S extends ListState<T>, T> extends Stream<S> {
+class PaginationController<T> extends Stream<ListState<T>> {
   /// a callback for loading new pages.
   /// The cursor of the page preceding the requested page is passed or null if
   /// the requested page is the first page.
@@ -139,7 +139,7 @@ class PaginationController<S extends ListState<T>, T> extends Stream<S> {
   /// loads the next page. Typically called by the [LivePaginatedList] widget
   void loadNextPage() {
     _emit(
-      ListState(ListStatus.loading, current.pagesStates, current.error),
+      ListState<T>(ListStatus.loading, current.pagesStates, current.error),
     );
     _loadPageAndSubscribe(subscriptions.length);
   }
@@ -150,14 +150,14 @@ class PaginationController<S extends ListState<T>, T> extends Stream<S> {
     final pagesStatuses = List.of(current.pagesStates, growable: false);
 
     _emit(
-      ListState(ListStatus.reloading, current.pagesStates, current.error),
+      ListState<T>(ListStatus.reloading, current.pagesStates, current.error),
     );
 
     for (int i = 0; i < current.pagesStates.length; ++i) {
       if (pagesStatuses[i].status != PageStatus.error) continue;
       pagesStatuses[i] = _reloadPage(i, pagesStatuses[i]);
     }
-    _emit(ListState(ListStatus.loading, pagesStatuses, current.error));
+    _emit(ListState<T>(ListStatus.loading, pagesStatuses, current.error));
 
     StreamSubscription<ListState<T>> sub;
     // listen to the states stream because none of the streams updating will
@@ -239,7 +239,7 @@ class PaginationController<S extends ListState<T>, T> extends Stream<S> {
     );
   }
 
-  _emit(ListState state) {
+  _emit(ListState<T> state) {
     // Although it would be possible to just listen to `_states` stream and
     // update `current` value there, but order of invocation for this listener
     // would matter and it's an implementation detail in which order the stream
@@ -249,14 +249,14 @@ class PaginationController<S extends ListState<T>, T> extends Stream<S> {
   }
 
   @override
-  StreamSubscription<S> listen(
-    void Function(S event) onData, {
+  StreamSubscription<ListState<T>> listen(
+    void Function(ListState<T> event) onData, {
     Function onError,
     void Function() onDone,
     bool cancelOnError,
   }) {
     return Stream.value(current)
-        .transform(StreamTransformer.fromHandlers(handleDone: (sink) {
+        .transform(StreamTransformer<ListState<T>, ListState<T>>.fromHandlers(handleDone: (sink) {
       _states.stream.listen(
         sink.add,
         onError: sink.addError,

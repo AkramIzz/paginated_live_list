@@ -7,10 +7,10 @@ import 'widget_aware_pagination.dart';
 import 'app_lifecycle_listener.dart';
 import 'widget_lifecycle_listener.dart';
 
-class LivePaginatedList<S extends ListState<T>, T> extends StatefulWidget {
-  final PaginationController<S, T> controller;
+class LivePaginatedList<T> extends StatefulWidget {
+  final PaginationController<T> controller;
   final ScrollController scrollController;
-  final Widget Function(BuildContext, S, int) itemBuilder;
+  final Widget Function(BuildContext, ListState<T>, int) itemBuilder;
   final void Function(BuildContext context, Object error) onError;
   final Widget Function(BuildContext context, Object error) errorMessageBuilder;
   final Widget Function(BuildContext context) progressBuilder;
@@ -34,7 +34,7 @@ class LivePaginatedList<S extends ListState<T>, T> extends StatefulWidget {
   factory LivePaginatedList.separated({
     Key key,
     @required PaginationController controller,
-    @required Widget Function(BuildContext, S, int) itemBuilder,
+    @required Widget Function(BuildContext, ListState<T>, int) itemBuilder,
     @required Widget Function(BuildContext, int) separatorBuilder,
     Widget noItemsWidget,
     Widget Function(BuildContext context, Object error) errorMessageBuilder,
@@ -62,15 +62,15 @@ class LivePaginatedList<S extends ListState<T>, T> extends StatefulWidget {
       );
 
   @override
-  _LivePaginatedListState<S, T> createState() =>
-      _LivePaginatedListState<S, T>();
+  _LivePaginatedListState<T> createState() =>
+      _LivePaginatedListState<T>();
 }
 
-class _LivePaginatedListState<S extends ListState<T>, T>
-    extends State<LivePaginatedList<S, T>> {
+class _LivePaginatedListState<T>
+    extends State<LivePaginatedList<T>> {
   ScrollController scrollController;
   WidgetAwarePagesSubscriptionsHandler _subsHandler;
-  Stream<S> _newListStatesStream;
+  Stream<ListState<T>> _newListStatesStream;
 
   @override
   void initState() {
@@ -121,7 +121,7 @@ class _LivePaginatedListState<S extends ListState<T>, T>
       listener: (context, state) {
         _subsHandler.onAppLifecycleChanged(state);
       },
-      child: StreamListener<S>(
+      child: StreamListener<ListState<T>>(
         // only listen to new states and skip the current one, since the
         // controller is a `BehaviorSubject`
         stream: _newListStatesStream,
@@ -138,7 +138,7 @@ class _LivePaginatedListState<S extends ListState<T>, T>
             }
           });
         },
-        child: StreamConsumer<S>(
+        child: StreamConsumer<ListState<T>>(
           stream: widget.controller,
           notifyWhen: (prevState, nextState) {
             return prevState.status != nextState.status;

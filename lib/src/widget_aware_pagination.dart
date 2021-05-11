@@ -2,8 +2,8 @@ import 'package:flutter/material.dart' hide Page;
 import 'helpers/lru_set.dart';
 import 'pagination_controller.dart';
 
-class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<S extends ListState<T>, T>
-    implements WidgetAwarePagesSubscriptionsHandler<S, T> {
+class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
+    implements WidgetAwarePagesSubscriptionsHandler<T> {
   final PaginationController controller;
   final int maximumActiveSubscriptions;
 
@@ -69,10 +69,9 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<S extends ListState<T>, T>
   final LruSet<int> _activeSubs;
 }
 
-abstract class WidgetAwarePagesSubscriptionsHandler<S extends ListState<T>, T> {
+abstract class WidgetAwarePagesSubscriptionsHandler<T> {
   factory WidgetAwarePagesSubscriptionsHandler(
     PaginationController controller, {
-    int pagePauseDelay,
     int maximumActiveSubscriptions,
   }) {
     return _WidgetAwarePagesSubscriptionsHandlerLruSetImpl(
