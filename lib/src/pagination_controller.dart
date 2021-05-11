@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:live_paginated_list/src/helpers/behavior_stream.dart';
+
 import 'page_cursor.dart';
 import 'helpers/or_error.dart';
 import 'helpers/stream_error_wrapper.dart';
@@ -108,7 +111,7 @@ class ListState<T> {
 ///
 /// It provides a `BehaviorSubject` interface which is a stream that caches the
 /// latest event and when subscribed to emits the cached event to the listener
-class PaginationController<T> extends Stream<ListState<T>> {
+class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// a callback for loading new pages.
   /// The cursor of the page preceding the requested page is passed or null if
   /// the requested page is the first page.
@@ -248,22 +251,14 @@ class PaginationController<T> extends Stream<ListState<T>> {
     _states.add(state);
   }
 
-  @override
-  StreamSubscription<ListState<T>> listen(
+  @protected
+  StreamSubscription<ListState<T>> listenToNewEvents(
     void Function(ListState<T> event) onData, {
     Function onError,
     void Function() onDone,
     bool cancelOnError,
   }) {
-    return Stream.value(current)
-        .transform(StreamTransformer<ListState<T>, ListState<T>>.fromHandlers(handleDone: (sink) {
-      _states.stream.listen(
-        sink.add,
-        onError: sink.addError,
-        onDone: sink.close,
-        cancelOnError: cancelOnError,
-      );
-    })).listen(
+    return _states.stream.listen(
       onData,
       onError: onError,
       onDone: onDone,

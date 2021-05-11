@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:live_paginated_list/src/helpers/behavior_stream.dart';
 
-class StreamListener<T> extends StatefulWidget {
-  final Stream<T> stream;
+class BehaviorStreamListener<T> extends StatefulWidget {
+  final BehaviorStream<T> stream;
   final void Function(BuildContext, T) listener;
   final bool Function(T previous, T next) notifyWhen;
   final Widget child;
 
-  const StreamListener({
+  const BehaviorStreamListener({
     Key key,
     this.stream,
     this.listener,
@@ -17,10 +18,10 @@ class StreamListener<T> extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _StreamListenerState<T> createState() => _StreamListenerState<T>();
+  _BehaviorStreamListenerState<T> createState() => _BehaviorStreamListenerState<T>();
 }
 
-class _StreamListenerState<T> extends State<StreamListener<T>> {
+class _BehaviorStreamListenerState<T> extends State<BehaviorStreamListener<T>> {
   StreamSubscription<T> _subscription;
 
   @override
@@ -30,7 +31,7 @@ class _StreamListenerState<T> extends State<StreamListener<T>> {
   }
 
   @override
-  void didUpdateWidget(StreamListener<T> oldWidget) {
+  void didUpdateWidget(BehaviorStreamListener<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.stream != widget.stream) {
       _subscription.cancel();
@@ -39,9 +40,9 @@ class _StreamListenerState<T> extends State<StreamListener<T>> {
   }
 
   void _listenToStream() {
-    T previous;
-    _subscription = widget.stream.listen((event) {
-      if (previous == null || (widget?.notifyWhen(previous, event) ?? true)) {
+    T previous = widget.stream.current;
+    _subscription = widget.stream.skip(1).listen((event) {
+      if (widget.notifyWhen?.call(previous, event) ?? true) {
         previous = event;
         widget.listener(context, event);
       }
@@ -60,14 +61,14 @@ class _StreamListenerState<T> extends State<StreamListener<T>> {
   }
 }
 
-class StreamConsumer<T> extends StatefulWidget {
-  final Stream<T> stream;
+class BehaviorStreamConsumer<T> extends StatefulWidget {
+  final BehaviorStream<T> stream;
   final Widget Function(BuildContext context, T) builder;
   final void Function(BuildContext context, T) listener;
   final bool Function(T previous, T next) notifyWhen;
   final bool Function(T previous, T next) buildWhen;
 
-  const StreamConsumer({
+  const BehaviorStreamConsumer({
     Key key,
     this.stream,
     this.listener,
@@ -77,21 +78,22 @@ class StreamConsumer<T> extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _StreamConsumerState<T> createState() => _StreamConsumerState<T>();
+  _BehaviorStreamConsumerState<T> createState() => _BehaviorStreamConsumerState<T>();
 }
 
-class _StreamConsumerState<T> extends State<StreamConsumer<T>> {
+class _BehaviorStreamConsumerState<T> extends State<BehaviorStreamConsumer<T>> {
   StreamSubscription<T> _subscription;
   T _lastEvent;
 
   @override
   void initState() {
     super.initState();
+    _lastEvent = widget.stream.current;
     _listenToStream();
   }
 
   @override
-  void didUpdateWidget(StreamConsumer<T> oldWidget) {
+  void didUpdateWidget(BehaviorStreamConsumer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.stream != widget.stream) {
       _subscription.cancel();
@@ -111,12 +113,10 @@ class _StreamConsumerState<T> extends State<StreamConsumer<T>> {
   }
 
   void _listenToStream() {
-    _subscription = widget.stream.listen((event) {
-      final shouldNotify = _lastEvent == null ||
-          (widget.notifyWhen?.call(_lastEvent, event) ?? true);
+    _subscription = widget.stream.skip(1).listen((event) {
+      final shouldNotify = widget.notifyWhen?.call(_lastEvent, event) ?? true;
 
-      final shouldBuild = _lastEvent == null ||
-          (widget.buildWhen?.call(_lastEvent, event) ?? true);
+      final shouldBuild = widget.buildWhen?.call(_lastEvent, event) ?? true;
 
       _lastEvent = event;
 

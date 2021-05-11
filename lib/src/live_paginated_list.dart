@@ -62,22 +62,18 @@ class LivePaginatedList<T> extends StatefulWidget {
       );
 
   @override
-  _LivePaginatedListState<T> createState() =>
-      _LivePaginatedListState<T>();
+  _LivePaginatedListState<T> createState() => _LivePaginatedListState<T>();
 }
 
-class _LivePaginatedListState<T>
-    extends State<LivePaginatedList<T>> {
+class _LivePaginatedListState<T> extends State<LivePaginatedList<T>> {
   ScrollController scrollController;
   WidgetAwarePagesSubscriptionsHandler _subsHandler;
-  Stream<ListState<T>> _newListStatesStream;
 
   @override
   void initState() {
     super.initState();
     scrollController = widget.scrollController ?? ScrollController();
     _subsHandler = WidgetAwarePagesSubscriptionsHandler(widget.controller);
-    _newListStatesStream = widget.controller.skip(1);
     scrollController.addListener(() {
       if (_shouldLoadMore()) {
         _loadMore();
@@ -121,10 +117,8 @@ class _LivePaginatedListState<T>
       listener: (context, state) {
         _subsHandler.onAppLifecycleChanged(state);
       },
-      child: StreamListener<ListState<T>>(
-        // only listen to new states and skip the current one, since the
-        // controller is a `BehaviorSubject`
-        stream: _newListStatesStream,
+      child: BehaviorStreamListener<ListState<T>>(
+        stream: widget.controller,
         listener: (context, state) {
           // controller's listener is called only when the scolling changes.
           // This creates a problem if the loaded page is smaller than screen
@@ -138,7 +132,7 @@ class _LivePaginatedListState<T>
             }
           });
         },
-        child: StreamConsumer<ListState<T>>(
+        child: BehaviorStreamConsumer<ListState<T>>(
           stream: widget.controller,
           notifyWhen: (prevState, nextState) {
             return prevState.status != nextState.status;
