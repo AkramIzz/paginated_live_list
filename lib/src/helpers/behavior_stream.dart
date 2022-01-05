@@ -11,12 +11,12 @@ abstract class BehaviorStream<T> extends Stream<T> {
   /// implementers must not call [listen] or transform `this`, instead
   /// listen or transform the internal stream
   @protected
-  StreamSubscription<T> listenToNewEvents(void onData(T event),
-      {Function onError, void onDone(), bool cancelOnError});
+  StreamSubscription<T> listenToNewEvents(void onData(T event)?,
+      {Function? onError, void Function()? onDone, bool? cancelOnError});
 
   @override
-  StreamSubscription<T> listen(void onData(T event),
-      {Function onError, void onDone(), bool cancelOnError}) {
+  StreamSubscription<T> listen(void onData(T event)?,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
     return Stream.value(current).transform(StreamTransformer<T, T>.fromHandlers(
       handleDone: (sink) {
         listenToNewEvents(

@@ -10,10 +10,10 @@ class WidgetLifecycleListener extends StatefulWidget {
   final void Function() onInitialized;
 
   const WidgetLifecycleListener({
-    @required this.onInitialized,
-    @required this.onDisposed,
-    @required this.child,
-    Key key,
+    required this.onInitialized,
+    required this.onDisposed,
+    required this.child,
+    Key? key,
   }) : super(key: key);
 
   @override

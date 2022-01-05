@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+  MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -27,7 +27,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _generator = Random();
 
-  PaginationController<int> controller;
+  late final PaginationController<int> controller;
 
   @override
   initState() {
@@ -35,12 +35,13 @@ class _MyHomePageState extends State<MyHomePage> {
     controller = PaginationController(_streamPage, true);
   }
 
-  Stream<Page<int>> _streamPage(PageCursor cursor) async* {
-    final pageIndex = (cursor as IntPageCursor)?.next ?? 0;
+  Stream<Page<int>> _streamPage(PageCursor? cursor) async* {
+    final pageIndex = (cursor as IntPageCursor?)?.next ?? 0;
     while (true) {
       await Future.delayed(Duration(seconds: _generator.nextInt(5)));
       yield Page(
-        List.generate(5, (index) => _generator.nextInt((pageIndex+1) * 5) + pageIndex * 5),
+        List.generate(5,
+            (index) => _generator.nextInt((pageIndex + 1) * 5) + pageIndex * 5),
         IntPageCursor(pageIndex + 1),
         pageIndex == 9,
       );
@@ -61,7 +62,8 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         },
         progressBuilder: (context) {
-          return Center(child: Padding(
+          return Center(
+              child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: CircularProgressIndicator(),
           ));

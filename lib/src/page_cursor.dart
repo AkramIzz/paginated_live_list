@@ -7,7 +7,7 @@ class Page<T> {
   /// a value that's used to fetch the next page.
   ///
   /// this is a user defined value. See [IntPageCursor] for an example
-  final PageCursor cursor;
+  final PageCursor? cursor;
 
   /// whether this page is the last page in the list
   ///

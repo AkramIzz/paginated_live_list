@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:live_paginated_list/src/helpers/behavior_stream.dart';
 
@@ -67,7 +68,7 @@ class PageState<T> {
   final Page<T> page;
 
   /// the error this page had if any
-  final Object error;
+  final Object? error;
 
   PageState(this.status, this.page, this.error);
 }
@@ -83,7 +84,7 @@ class ListState<T> {
   final ListStatus status;
 
   /// the last recieved error
-  final Object error;
+  final Object? error;
 
   /// A list of all the pages with their states
   ///
@@ -117,15 +118,14 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// the requested page is the first page.
   ///
   /// There's no mandate on whether the stream should close after an error.
-  final Stream<Page<T>> Function(PageCursor cursor) onLoadPage;
+  final Stream<Page<T>> Function(PageCursor? cursor) onLoadPage;
 
   /// whether the pages returned by [PaginationController.onLoadPage] have
   /// fixed size
   final bool hasFixedPageSize;
 
-  PaginationController(this.onLoadPage, this.hasFixedPageSize) {
-    _states = StreamController<ListState<T>>.broadcast();
-  }
+  PaginationController(this.onLoadPage, this.hasFixedPageSize)
+      : _states = StreamController<ListState<T>>.broadcast();
 
   StreamController<ListState<T>> _states;
 
@@ -162,7 +162,7 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     }
     _emit(ListState<T>(ListStatus.loading, pagesStatuses, current.error));
 
-    StreamSubscription<ListState<T>> sub;
+    late final StreamSubscription<ListState<T>> sub;
     // listen to the states stream because none of the streams updating will
     // yield a new PageState.status since they are all updates to existing pages
     // but the PageState.status should change after all the pages are done loading.
@@ -199,10 +199,14 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     final cursor =
         pageIndex == 0 ? null : current.pagesStates[pageIndex - 1].page.cursor;
     final listStream = orErrorWrapper.call(() => onLoadPage(cursor));
-    if (pageIndex >= subscriptions.length) subscriptions.add(null);
-    subscriptions[pageIndex] = listStream.listen((res) {
+    final subscription = listStream.listen((res) {
       _emit(_updatePage(pageIndex, res));
     });
+    if (pageIndex >= subscriptions.length) {
+      subscriptions.add(subscription);
+    } else {
+      subscriptions[pageIndex] = subscription;
+    }
   }
 
   /// returns a new ListState given an update to a page
@@ -219,7 +223,8 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     final isUpdate = index != current.pagesStates.length;
     final pagesStatuses = List.of(current.pagesStates, growable: !isUpdate);
     if (!isUpdate) {
-      pagesStatuses.add(null);
+      // Dummy PageState. True value is assigned below
+      pagesStatuses.add(PageState(PageStatus.loaded, Page.initial(), null));
     }
 
     return page.incase(
@@ -236,8 +241,8 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
         return ListState(status, pagesStatuses, current.error);
       },
       error: (e) {
-        pagesStatuses[index] = PageState(
-            PageStatus.error, pagesStatuses[index]?.page ?? Page.initial(), e);
+        pagesStatuses[index] =
+            PageState(PageStatus.error, pagesStatuses[index].page, e);
         return ListState(ListStatus.error, pagesStatuses, e);
       },
     );
@@ -254,10 +259,10 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
   @protected
   StreamSubscription<ListState<T>> listenToNewEvents(
-    void Function(ListState<T> event) onData, {
-    Function onError,
-    void Function() onDone,
-    bool cancelOnError,
+    void Function(ListState<T> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
   }) {
     return _states.stream.listen(
       onData,
@@ -269,17 +274,13 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
   Future<void> dispose() {
     return _states.close().then((_) {
-      return Future.wait(subscriptions.map((sub) => sub.cancel()));
+      return Future.wait<void>(subscriptions.map((sub) => sub.cancel()));
     });
   }
 }
 
 extension _PageStatusQuery on ListState {
   bool pageStatusExists(PageStatus status) {
-    return pagesStates.firstWhere(
-          (ps) => ps.status == status,
-          orElse: () => null,
-        ) !=
-        null;
+    return pagesStates.firstWhereOrNull((ps) => ps.status == status) != null;
   }
 }
