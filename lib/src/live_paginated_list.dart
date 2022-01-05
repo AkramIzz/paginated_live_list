@@ -32,36 +32,6 @@ class LivePaginatedList<T> extends StatefulWidget {
     Key? key,
   }) : super(key: key);
 
-  factory LivePaginatedList.separated({
-    Key? key,
-    required PaginationController<T> controller,
-    required Widget Function(BuildContext, ListState<T>, int) itemBuilder,
-    required Widget Function(BuildContext, int) separatorBuilder,
-    Widget? noItemsWidget,
-    Widget Function(BuildContext context, Object? error)? errorMessageBuilder,
-    Widget Function(BuildContext context)? progressBuilder,
-    void Function(BuildContext context, Object? error)? onError,
-    ScrollPhysics? physics,
-    bool kickStart = true,
-  }) =>
-      LivePaginatedList(
-        controller: controller,
-        itemBuilder: (context, state, index) {
-          final int itemIndex = index ~/ 2;
-          if (index.isEven) {
-            return itemBuilder(context, state, itemIndex);
-          } else {
-            return separatorBuilder(context, itemIndex);
-          }
-        },
-        noItemsWidget: noItemsWidget,
-        errorMessageBuilder: errorMessageBuilder,
-        progressBuilder: progressBuilder,
-        onError: onError,
-        physics: physics,
-        kickStart: kickStart,
-      );
-
   @override
   _LivePaginatedListState<T> createState() => _LivePaginatedListState<T>();
 }
