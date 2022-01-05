@@ -1,0 +1,59 @@
+name: Flutter Tests
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    env:
+        flutter_path: '/opt/hostedtoolcache/flutter'
+        directory: ./
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set Flutter version
+      run: |
+        set -e
+        _flutterVersion=$( awk '
+          /environment/{
+            flag=1
+          }
+          flag && /flutter:/{
+            print $NF;
+            flag=""
+          }' pubspec.yaml | sed 's/\^//g' )
+        echo "FLUTTER_VERSION=${_flutterVersion}" >> $GITHUB_ENV
+      working-directory: ${{ env.directory }}
+
+    - name: Cache Flutter
+      id: cache-flutter
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.flutter_path }}
+        key: ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}
+
+    - uses: subosito/flutter-action@v1
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+
+    - name: Check format
+      run: flutter format --dry-run --set-exit-if-changed .
+
+    - name: Install dependencies
+      run: flutter pub get
+      working-directory: ${{ env.directory }}
+
+    - name: Run static analysis
+      run: flutter analyze .
+
+    - name: Run tests
+      # TODO add coverage option and use codecov for results display
+      run: flutter test
+      working-directory: ${{ env.directory }}
