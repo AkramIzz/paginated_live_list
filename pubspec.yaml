@@ -1,7 +1,6 @@
 name: live_paginated_list
 description: A Paginated Live List Widget
 version: 0.0.1
-author: Akram Izzeldin
 homepage: https://github.com/AkramIzz/live_paginated_list
 
 environment:
