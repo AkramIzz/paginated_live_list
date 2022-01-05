@@ -5,14 +5,14 @@ class LruSet<E> {
 
   final _entries = Map<E, _LinkedEntry<E>>();
 
-  _LinkedEntry head;
-  _LinkedEntry tail;
+  _LinkedEntry<E>? head;
+  _LinkedEntry<E>? tail;
 
-  E put(E value) {
-    _LinkedEntry removedEntry;
+  E? put(E value) {
+    _LinkedEntry? removedEntry;
 
     if (_entries.containsKey(value)) {
-      _updateMru(_entries[value]);
+      _updateMru(_entries[value]!);
     } else {
       if (_entries.length >= maximumSize) {
         removedEntry = _removeLru();
@@ -36,7 +36,8 @@ class LruSet<E> {
   }
 
   _LinkedEntry _removeLru() {
-    final lru = tail;
+    assert(tail != null);
+    final lru = tail!;
 
     if (head == tail) {
       head = tail = null;
@@ -48,7 +49,7 @@ class LruSet<E> {
     return lru;
   }
 
-  void _updateMru(_LinkedEntry entry) {
+  void _updateMru(_LinkedEntry<E> entry) {
     if (entry == head) {
       return;
     }
@@ -64,7 +65,7 @@ class LruSet<E> {
     head = entry;
   }
 
-  void _insertEntry(_LinkedEntry entry) {
+  void _insertEntry(_LinkedEntry<E> entry) {
     tail ??= entry;
     entry.prev = head;
     head?.next = entry;
@@ -78,6 +79,6 @@ class _LinkedEntry<E> {
 
   E value;
 
-  _LinkedEntry<E> next;
-  _LinkedEntry<E> prev;
+  _LinkedEntry<E>? next;
+  _LinkedEntry<E>? prev;
 }

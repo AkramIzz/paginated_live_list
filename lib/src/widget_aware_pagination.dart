@@ -8,7 +8,7 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
 
   _WidgetAwarePagesSubscriptionsHandlerLruSetImpl(
     this.controller, {
-    int maximumActiveSubscriptions,
+    int? maximumActiveSubscriptions,
   }) : _activeSubs = LruSet(maximumActiveSubscriptions ?? 5) {
     // if the controller already have active subscriptions we pause them all
     // since there's no way to tell which pages are visible.
@@ -73,7 +73,7 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
 abstract class WidgetAwarePagesSubscriptionsHandler<T> {
   factory WidgetAwarePagesSubscriptionsHandler(
     PaginationController controller, {
-    int maximumActiveSubscriptions,
+    int? maximumActiveSubscriptions,
   }) {
     return _WidgetAwarePagesSubscriptionsHandlerLruSetImpl(
       controller,

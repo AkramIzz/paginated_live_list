@@ -9,38 +9,39 @@ import 'widget_lifecycle_listener.dart';
 
 class LivePaginatedList<T> extends StatefulWidget {
   final PaginationController<T> controller;
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
   final Widget Function(BuildContext, ListState<T>, int) itemBuilder;
-  final void Function(BuildContext context, Object error) onError;
-  final Widget Function(BuildContext context, Object error) errorMessageBuilder;
-  final Widget Function(BuildContext context) progressBuilder;
-  final ScrollPhysics physics;
-  final Widget noItemsWidget;
+  final void Function(BuildContext context, Object? error)? onError;
+  final Widget Function(BuildContext context, Object? error)?
+      errorMessageBuilder;
+  final Widget Function(BuildContext context)? progressBuilder;
+  final ScrollPhysics? physics;
+  final Widget? noItemsWidget;
   final bool kickStart;
 
   const LivePaginatedList({
-    @required this.controller,
+    required this.controller,
     this.scrollController,
-    @required this.itemBuilder,
+    required this.itemBuilder,
     this.noItemsWidget,
     this.errorMessageBuilder,
     this.progressBuilder,
     this.onError,
     this.physics,
     this.kickStart = true,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   factory LivePaginatedList.separated({
-    Key key,
-    @required PaginationController controller,
-    @required Widget Function(BuildContext, ListState<T>, int) itemBuilder,
-    @required Widget Function(BuildContext, int) separatorBuilder,
-    Widget noItemsWidget,
-    Widget Function(BuildContext context, Object error) errorMessageBuilder,
-    Widget Function(BuildContext context) progressBuilder,
-    void Function(BuildContext context, Object error) onError,
-    ScrollPhysics physics,
+    Key? key,
+    required PaginationController<T> controller,
+    required Widget Function(BuildContext, ListState<T>, int) itemBuilder,
+    required Widget Function(BuildContext, int) separatorBuilder,
+    Widget? noItemsWidget,
+    Widget Function(BuildContext context, Object? error)? errorMessageBuilder,
+    Widget Function(BuildContext context)? progressBuilder,
+    void Function(BuildContext context, Object? error)? onError,
+    ScrollPhysics? physics,
     bool kickStart = true,
   }) =>
       LivePaginatedList(
@@ -66,8 +67,8 @@ class LivePaginatedList<T> extends StatefulWidget {
 }
 
 class _LivePaginatedListState<T> extends State<LivePaginatedList<T>> {
-  ScrollController scrollController;
-  WidgetAwarePagesSubscriptionsHandler _subsHandler;
+  late final ScrollController scrollController;
+  late final WidgetAwarePagesSubscriptionsHandler _subsHandler;
 
   @override
   void initState() {

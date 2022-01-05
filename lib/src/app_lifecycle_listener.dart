@@ -5,8 +5,8 @@ class AppLifecycleListener extends StatefulWidget {
   final void Function(BuildContext context, AppLifecycleState state) listener;
 
   AppLifecycleListener({
-    @required this.child,
-    @required this.listener,
+    required this.child,
+    required this.listener,
   });
 
   @override
