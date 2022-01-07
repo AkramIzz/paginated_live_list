@@ -37,11 +37,15 @@ enum ListStatus {
   /// All pages with errors are being loaded
   reloading,
 
-  /// The latest page has been loaded
+  /// The latest page has been loaded.
+  /// This status doesn't mean there's no errors in all the pages. Only that the
+  /// initial loading of all pages has completed successfully. Errors from the
+  /// updating stream aren't reflected in the ListStatus
   loaded,
 
-  /// An error occured while either loading a page or listening to updates
-  /// of any page in the list.
+  /// An error occured while loading a new page.
+  /// If an error occured while listening to updates, the
+  /// [ListState.status] doesn't change to error.
   error,
 
   /// The list has reached the last page and there's no more pages to load.
@@ -77,7 +81,7 @@ class ListState<T> {
   /// the overall status of the paginated list.
   ///
   /// in order, the rule for this status is
-  /// 1. [ListStatus.error] if there's an error at any page
+  /// 1. [ListStatus.error] if there's an error at a newly loaded page
   /// 2. [ListStatus.loading] if the last page is loading
   /// 3. [ListStatus.end] if all pages are loaded and there's no more pages
   /// 4. [ListStatus.loaded] if all pages are loaded
@@ -104,6 +108,14 @@ class ListState<T> {
         pagesStates = const [],
         items = const [],
         error = null;
+
+  ListState<T> copyWithStatus(ListStatus status) {
+    return ListState(status, this.pagesStates, this.error);
+  }
+
+  bool pageStatusExists(PageStatus status) {
+    return pagesStates.firstWhereOrNull((ps) => ps.status == status) != null;
+  }
 }
 
 /// The manager class for the live list.
@@ -139,54 +151,47 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// is the last emitted value when invoked.
   ListState<T> current = ListState.initial();
 
-  /// loads the next page. Typically called by the [LivePaginatedList] widget
+  /// Loads the next page. Typically called by the [LivePaginatedList] widget
   void loadNextPage() {
-    _emit(
-      ListState<T>(ListStatus.loading, current.pagesStates, current.error),
-    );
+    _emit(ListState(ListStatus.loading, current.pagesStates, current.error));
     _loadPageAndSubscribe(subscriptions.length);
   }
 
-  /// reloads the pages that had an error while loading the initial page or
+  /// Reloads the pages that had an error while loading the initial page or
   /// on subsequent updates.
   void reloadErroredPages() {
     final pagesStatuses = List.of(current.pagesStates, growable: false);
-
-    _emit(
-      ListState<T>(ListStatus.reloading, current.pagesStates, current.error),
-    );
 
     for (int i = 0; i < current.pagesStates.length; ++i) {
       if (pagesStatuses[i].status != PageStatus.error) continue;
       pagesStatuses[i] = _reloadPage(i, pagesStatuses[i]);
     }
-    _emit(ListState<T>(ListStatus.loading, pagesStatuses, current.error));
+    _emit(ListState(ListStatus.reloading, pagesStatuses, current.error));
 
     late final StreamSubscription<ListState<T>> sub;
-    // listen to the states stream because none of the streams updating will
-    // yield a new PageState.status since they are all updates to existing pages
-    // but the PageState.status should change after all the pages are done loading.
+    // Listen to the states stream and emit a new state when all pages are done
+    // reloading.
+    // None of the pages reloading will result in a new [ListState.status]
+    // since they are all updates to existing pages.
+    // Thus we need to change the `ListState.status` after all the pages are
+    // done loading.
     //
-    // see _updatePage for a clarification
-    sub = this.skip(1).listen((state) {
+    // see _updatePage for a clarification on how [ListState.status] is updated
+    sub = _states.stream.listen((state) {
       final isLoading = state.pageStatusExists(PageStatus.loading);
       if (!isLoading) {
         sub.cancel();
-        final hasError = state.pageStatusExists(PageStatus.error);
-        if (hasError) {
-          _emit(_updateStatus(ListStatus.error));
+        // Update status according to last page.
+        if (state.pagesStates.last.status == PageStatus.error) {
+          _emit(current.copyWithStatus(ListStatus.error));
         } else {
           final status = current.pagesStates.last.page.isLastPage
               ? ListStatus.end
               : ListStatus.loaded;
-          _emit(_updateStatus(status));
+          _emit(current.copyWithStatus(status));
         }
       }
     });
-  }
-
-  ListState<T> _updateStatus(ListStatus status) {
-    return ListState<T>(status, current.pagesStates, current.error);
   }
 
   PageState<T> _reloadPage(int index, PageState<T> pageState) {
@@ -209,48 +214,73 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     }
   }
 
-  /// returns a new ListState given an update to a page
+  /// Returns a new ListState given an update to a page
   ///
-  /// [ListState.status] is resolved as:
-  /// - if the page result is an error, status is [ListStatus.error]
-  /// - if the current [ListState.status] is [ListStatus.error], the status is
-  /// kept unchanged
-  /// - if the page is the first value for the last page,
-  /// status is [ListStatus.loaded] or [ListStatus.end]
-  /// - otherwise (the page is an update to an existing page) the current
-  /// [ListStatus.status] is kept unchanged
+  /// Ignoring [ListStatus.reloading] the [ListState.status] is resolved as:
+  /// - if the page result is a value:
+  ///   - if the page is the last page, the status is [ListStatus.loaded] or
+  /// [ListStatus.end].
+  ///   - otherwise the status is kept unchanged.
+  /// - if the page result is an error:
+  ///   - if the page is the initial value for the last page, the status is
+  /// [ListStatus.error].
+  ///   - otherwise the status is kept unchanged.
+  ///
+  /// if [ListState.status] is [ListStatus.reloading] the status is updated only
+  /// when all the loading pages have loaded according to the above rules.
+  /// The update to [ListState.status] in this case is handled by
+  /// [reloadErroredPages].
+  ///
+  /// Note that a new [ListState] will returned regardless of whether the
+  /// status has been updated or not.
   ListState<T> _updatePage(int index, OrError<Page<T>> page) {
-    final isUpdate = index != current.pagesStates.length;
-    final pagesStatuses = List.of(current.pagesStates, growable: !isUpdate);
+    // both can't be true, but can't be false; if it's not the last page it
+    // must be an update.
+    final isUpdate = index <= current.pagesStates.length - 1;
+    final isLastPageLoaded = index >= current.pagesStates.length - 1;
+
+    final canUpdateStatus = current.status != ListStatus.reloading;
+
+    final List<PageState?> pagesStatuses =
+        List.of(current.pagesStates, growable: !isUpdate);
     if (!isUpdate) {
-      // Dummy PageState. True value is assigned below
-      pagesStatuses.add(PageState(PageStatus.loaded, Page.initial(), null));
+      pagesStatuses.add(null);
     }
 
     return page.incase(
       value: (v) {
         pagesStatuses[index] = PageState(PageStatus.loaded, v, null);
 
-        ListStatus status;
-        if (isUpdate || current.status == ListStatus.error) {
-          status = current.status;
-        } else {
+        final ListStatus status;
+        if (isLastPageLoaded) {
           status = v.isLastPage ? ListStatus.end : ListStatus.loaded;
+        } else {
+          status = current.status;
         }
 
-        return ListState(status, pagesStatuses, current.error);
+        return ListState(
+          canUpdateStatus ? status : current.status,
+          pagesStatuses.cast(),
+          current.error,
+        );
       },
       error: (e) {
-        pagesStatuses[index] =
-            PageState(PageStatus.error, pagesStatuses[index].page, e);
-        return ListState(ListStatus.error, pagesStatuses, e);
+        pagesStatuses[index] = PageState(
+            PageStatus.error, pagesStatuses[index]?.page ?? Page.initial(), e);
+        final status =
+            isLastPageLoaded && !isUpdate ? ListStatus.error : current.status;
+        return ListState(
+          canUpdateStatus ? status : current.status,
+          pagesStatuses.cast(),
+          e,
+        );
       },
     );
   }
 
-  _emit(ListState<T> state) {
+  void _emit(ListState<T> state) {
     // Although it would be possible to just listen to `_states` stream and
-    // update `current` value there, but order of invocation for this listener
+    // update `current` value there, the order of invocation for this listener
     // would matter and it's an implementation detail in which order the stream
     // listeners are invoked.
     current = state;
@@ -276,11 +306,5 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
     return _states.close().then((_) {
       return Future.wait<void>(subscriptions.map((sub) => sub.cancel()));
     });
-  }
-}
-
-extension _PageStatusQuery on ListState {
-  bool pageStatusExists(PageStatus status) {
-    return pagesStates.firstWhereOrNull((ps) => ps.status == status) != null;
   }
 }
