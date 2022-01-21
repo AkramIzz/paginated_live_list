@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:live_paginated_list/src/helpers/behavior_stream.dart';
 
 import 'page_cursor.dart';
 import 'helpers/or_error.dart';
+import 'helpers/as_unicast_stream.dart';
+import 'helpers/behavior_stream.dart';
 import 'helpers/stream_error_wrapper.dart';
 
 enum PageStatus {
@@ -204,7 +205,9 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   void _loadPageAndSubscribe(int pageIndex) {
     final cursor =
         pageIndex == 0 ? null : current.pagesStates[pageIndex - 1].page.cursor;
-    final listStream = orErrorWrapper.call(() => onLoadPage(cursor));
+    final listStream = orErrorWrapper.call(
+      () => asUnicastStream(create: () => onLoadPage(cursor)),
+    );
     final subscription = listStream.listen((res) {
       _emit(_updatePage(pageIndex, res));
     });
