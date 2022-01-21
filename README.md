@@ -1,6 +1,6 @@
-# live_paginated_list
+# paginated_live_list
 
-A live paginated list widget
+A Paginated Live List Widget
 
 ## Getting Started
 

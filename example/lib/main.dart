@@ -3,7 +3,7 @@ import 'package:example/offer_model.dart';
 import 'package:example/offers_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart' hide Page;
-import 'package:live_paginated_list/live_paginated_list.dart';
+import 'package:paginated_live_list/paginated_live_list.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: ActionsButton(controller: controller),
-      body: LivePaginatedList<Offer>(
+      body: PaginatedLiveList<Offer>(
         controller: controller,
         itemBuilder: (context, state, index) {
           final item = state.items[index];

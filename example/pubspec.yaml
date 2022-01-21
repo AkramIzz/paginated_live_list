@@ -29,7 +29,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
-  live_paginated_list:
+  paginated_live_list:
     path: ../
   firebase_core: ^1.10.6
   cloud_firestore: ^3.1.5

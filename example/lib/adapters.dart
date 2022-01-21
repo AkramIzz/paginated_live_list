@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:live_paginated_list/live_paginated_list.dart';
+import 'package:paginated_live_list/paginated_live_list.dart';
 
 class FirestorePageCursor<T extends Object?> implements PageCursor {
   final DocumentSnapshot<T>? last;

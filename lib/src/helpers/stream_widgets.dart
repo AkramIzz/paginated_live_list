@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:live_paginated_list/src/helpers/behavior_stream.dart';
+import 'package:paginated_live_list/src/helpers/behavior_stream.dart';
 
 class BehaviorStreamListener<T> extends StatefulWidget {
   final BehaviorStream<T> stream;

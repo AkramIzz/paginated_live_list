@@ -7,7 +7,7 @@ import 'widget_aware_pagination.dart';
 import 'app_lifecycle_listener.dart';
 import 'widget_lifecycle_listener.dart';
 
-class LivePaginatedList<T> extends StatefulWidget {
+class PaginatedLiveList<T> extends StatefulWidget {
   final PaginationController<T> controller;
   final ScrollController? scrollController;
   final Widget Function(BuildContext, ListState<T>, int) itemBuilder;
@@ -19,7 +19,7 @@ class LivePaginatedList<T> extends StatefulWidget {
   final Widget? noItemsWidget;
   final bool kickStart;
 
-  const LivePaginatedList({
+  const PaginatedLiveList({
     required this.controller,
     this.scrollController,
     required this.itemBuilder,
@@ -33,10 +33,10 @@ class LivePaginatedList<T> extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _LivePaginatedListState<T> createState() => _LivePaginatedListState<T>();
+  _PaginatedLiveListState<T> createState() => _PaginatedLiveListState<T>();
 }
 
-class _LivePaginatedListState<T> extends State<LivePaginatedList<T>> {
+class _PaginatedLiveListState<T> extends State<PaginatedLiveList<T>> {
   late final ScrollController scrollController;
   late final WidgetAwarePagesSubscriptionsHandler _subsHandler;
 

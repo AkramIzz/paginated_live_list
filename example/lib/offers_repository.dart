@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:example/adapters.dart';
-import 'package:live_paginated_list/live_paginated_list.dart';
+import 'package:paginated_live_list/paginated_live_list.dart';
 
 import 'offer_model.dart';
 

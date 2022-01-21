@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:live_paginated_list/src/helpers/lru_set.dart';
+import 'package:paginated_live_list/src/helpers/lru_set.dart';
 
 void main() {
   test('can add element to an empty LruSet', () {
