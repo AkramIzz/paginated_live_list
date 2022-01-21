@@ -61,7 +61,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '19880098284',
     projectId: 'fir-testing-47026',
     storageBucket: 'fir-testing-47026.appspot.com',
-    iosClientId: '19880098284-g5c92ti9a5ruaf7sktgoevtjr2disie3.apps.googleusercontent.com',
+    iosClientId:
+        '19880098284-g5c92ti9a5ruaf7sktgoevtjr2disie3.apps.googleusercontent.com',
     iosBundleId: 'com.example.app',
   );
 }
