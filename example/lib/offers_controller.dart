@@ -28,6 +28,10 @@ class OffersController extends PaginationController<Offer> {
       }),
     );
   }
+
+  Future<void> onClearOffers() async {
+    await OffersRepository.instance.deleteAll(current.items);
+  }
 }
 
 Stream<Page<Offer>> _onLoadPage(PageCursor? cursor) {

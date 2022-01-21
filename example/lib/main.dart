@@ -141,6 +141,11 @@ class _ActionsButtonState extends State<ActionsButton> {
         ),
         separator,
         FloatingActionButton(
+          child: Icon(Icons.clear_all),
+          onPressed: () => widget.controller.onClearOffers(),
+        ),
+        separator,
+        FloatingActionButton(
           child: Icon(Icons.arrow_forward),
           onPressed: _toggle,
         ),

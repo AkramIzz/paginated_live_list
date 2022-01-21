@@ -13,6 +13,7 @@ extension LetValue<T extends Object> on T {
 abstract class OffersRepository {
   Future<List<Offer>> createMultiple(List<Offer> offers);
   Future<void> delete(Offer offer);
+  Future<void> deleteAll(List<Offer> offers);
   Stream<Page<Offer>> list(covariant PageCursor? cursor);
 
   static final OffersRepository instance = FirebaseOffersRepository();
@@ -38,6 +39,14 @@ class FirebaseOffersRepository implements OffersRepository {
   @override
   Future<void> delete(Offer offer) {
     return ref.doc(offer.id).delete();
+  }
+
+  Future<void> deleteAll(List<Offer> offers) {
+    final batch = FirebaseFirestore.instance.batch();
+    for (var offer in offers) {
+      batch.delete(ref.doc(offer.id));
+    }
+    return batch.commit();
   }
 
   @override
