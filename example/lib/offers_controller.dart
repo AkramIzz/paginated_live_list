@@ -35,8 +35,5 @@ class OffersController extends PaginationController<Offer> {
 }
 
 Stream<Page<Offer>> _onLoadPage(PageCursor? cursor) {
-  return OffersRepository.instance.list(cursor).map((page) {
-    print(page.cursor);
-    return page;
-  });
+  return OffersRepository.instance.list(cursor);
 }

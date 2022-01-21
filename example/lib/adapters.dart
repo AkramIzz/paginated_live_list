@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:live_paginated_list/live_paginated_list.dart';
 
-class FirestorePageCursor<T> implements PageCursor {
+class FirestorePageCursor<T extends Object?> implements PageCursor {
   final DocumentSnapshot<T>? last;
 
   FirestorePageCursor(this.last);
@@ -40,7 +40,7 @@ extension PaginatedQuerySnapshots on Query<Map<String, dynamic>> {
         .snapshots(includeMetadataChanges: includeMetadataChanges)
         .map((snapshot) {
       if (snapshot.size == 0) {
-        return Page(const [], FirestorePageCursor(null), true);
+        return Page<T>(const [], FirestorePageCursor(null), true);
       }
 
       return Page<T>(

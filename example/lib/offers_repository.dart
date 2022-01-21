@@ -51,7 +51,7 @@ class FirebaseOffersRepository implements OffersRepository {
 
   @override
   Stream<Page<Offer>> list(FirestorePageCursor? cursor) {
-    final query = ref.orderBy('createdAt', descending: false);
+    final query = ref.orderBy('createdAt');
     return query.paginatedSnapshots(
       cursor,
       documentMapper: (doc) => Offer.fromJson(doc.data()),
