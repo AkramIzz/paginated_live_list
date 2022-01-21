@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:live_paginated_list/live_paginated_list.dart';
+import 'package:paginated_live_list/paginated_live_list.dart';
 
 void main() {
   test('can create a controller', () {

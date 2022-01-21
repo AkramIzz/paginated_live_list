@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:example/offer_model.dart';
 import 'package:example/offers_repository.dart';
-import 'package:live_paginated_list/live_paginated_list.dart';
+import 'package:paginated_live_list/paginated_live_list.dart';
 
 class OffersController extends PaginationController<Offer> {
   OffersController() : super(_onLoadPage, false);

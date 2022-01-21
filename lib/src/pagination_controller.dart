@@ -153,7 +153,7 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// is the last emitted value when invoked.
   ListState<T> current = ListState.initial();
 
-  /// Loads the next page. Typically called by the [LivePaginatedList] widget
+  /// Loads the next page. Typically called by the [PaginatedLiveList] widget
   void loadNextPage() {
     _emit(ListState(ListStatus.loading, current.pagesStates, current.error));
     _loadPageAndSubscribe(subscriptions.length);
