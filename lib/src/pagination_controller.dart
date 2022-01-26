@@ -126,20 +126,15 @@ class ListState<T> {
 ///
 /// It provides a `BehaviorSubject` interface which is a stream that caches the
 /// latest event and when subscribed to emits the cached event to the listener
-class PaginationController<T> extends BehaviorStream<ListState<T>> {
+abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// a callback for loading new pages.
   /// The cursor of the page preceding the requested page is passed or null if
   /// the requested page is the first page.
   ///
   /// There's no mandate on whether the stream should close after an error.
-  final Stream<Page<T>> Function(PageCursor? cursor) onLoadPage;
+  Stream<Page<T>> onLoadPage(PageCursor? cursor);
 
-  /// whether the pages returned by [PaginationController.onLoadPage] have
-  /// fixed size
-  final bool hasFixedPageSize;
-
-  PaginationController(this.onLoadPage, this.hasFixedPageSize)
-      : _states = StreamController<ListState<T>>.broadcast();
+  PaginationController() : _states = StreamController<ListState<T>>.broadcast();
 
   StreamController<ListState<T>> _states;
 
@@ -156,7 +151,10 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Loads the next page. Typically called by the [PaginatedLiveList] widget
   void loadNextPage() {
     _emit(ListState(ListStatus.loading, current.pagesStates, current.error));
-    _loadPageAndSubscribe(subscriptions.length);
+    final index = subscriptions.length;
+    final cursor =
+        index == 0 ? null : current.pagesStates[index - 1].page.cursor;
+    _loadPageAndSubscribe(cursor, index);
   }
 
   /// Reloads the pages that had an error while loading the initial page or
@@ -198,13 +196,15 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
   PageState<T> _reloadPage(int index, PageState<T> pageState) {
     subscriptions[index].cancel();
-    _loadPageAndSubscribe(index);
+
+    final cursor =
+        index == 0 ? null : current.pagesStates[index - 1].page.cursor;
+    _loadPageAndSubscribe(cursor, index);
+
     return PageState(PageStatus.loading, pageState.page, pageState.error);
   }
 
-  void _loadPageAndSubscribe(int pageIndex) {
-    final cursor =
-        pageIndex == 0 ? null : current.pagesStates[pageIndex - 1].page.cursor;
+  void _loadPageAndSubscribe(PageCursor? cursor, int pageIndex) {
     final listStream = orErrorWrapper.call(
       () => asUnicastStream(create: () => onLoadPage(cursor)),
     );
@@ -240,6 +240,7 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Note that a new [ListState] is returned regardless of whether the
   /// status has been updated or not.
   ListState<T> _updatePage(int index, OrError<Page<T>> page) {
+    print('updating page with index: $index');
     // both can be true, but can't be false; if it's not the last page it
     // must be an update.
     final isUpdate = index <= current.pagesStates.length - 1;
@@ -247,14 +248,24 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
     final canUpdateStatus = current.status != ListStatus.reloading;
 
-    final List<PageState<T>?> pagesStatuses =
-        List.of(current.pagesStates, growable: !isUpdate);
+    final oldPage = isUpdate ? current.pagesStates[index].page : null;
+
+    final List<PageState<T>?> pagesStatuses = List.of(current.pagesStates);
     if (!isUpdate) {
       pagesStatuses.add(null);
     }
 
     return page.incase(
       value: (v) {
+        if (isUpdate) {
+          v = _adjustPage(
+            index,
+            page: v,
+            oldPage: oldPage,
+            pagesStates: pagesStatuses.cast(),
+          );
+        }
+
         pagesStatuses[index] = PageState(PageStatus.loaded, v, null);
 
         final ListStatus status;
@@ -283,6 +294,114 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
       },
     );
   }
+
+  /// Adjusts the page cursor and items so other pages don't need to change
+  /// when new items are inserted or old items are deleted.
+  ///
+  /// Adjustments to pages may result in some items being repeated in multiple
+  /// pages, this is a reasonable tradeoff to not having to reload all the
+  /// pages due to a single page's cursor changing.
+  ///
+  /// The algorithm is as follows:
+  /// - remove any next page that has it's cursor less than or equal to this
+  /// page's cursor. Logically, this implies that the next page's items are
+  /// are present in this and previous pages
+  /// - adjust the page's cursor so if the cursor is used it loads the next
+  /// page.
+  /// - if the cursor changed due to adjustment, the page is partly next page
+  /// and thus no new pages are needed.
+  /// - otherwise create a new page after page using page's cursor, and when the
+  /// new page loads, [_adjustPage] will be called again. This allows multiple
+  /// pages to be loaded if more than a single page size items were inserted.
+  Page<T> _adjustPage(int index,
+      {required Page<T> page,
+      required Page<T>? oldPage,
+      required List<PageState<T>?> pagesStates}) {
+    print('adjusting page with index: $index');
+    var nextPage =
+        index + 1 < pagesStates.length ? pagesStates[index + 1]?.page : null;
+
+    // while the page's cursor points to a page after next page remove next page
+    while (nextPage != null && compareTo(page, nextPage) >= 0) {
+      pagesStates.removeAt(index + 1);
+      index += 1;
+      nextPage =
+          index + 1 < pagesStates.length ? pagesStates[index + 1]?.page : null;
+    }
+
+    // If this is a new page
+    // or cursor hasn't changed
+    // or there's no page after this page.
+    // or the page after this page isn't loaded yet
+    // or there's no next page (will be loaded when user scrolls)
+    if (oldPage == null ||
+        page.cursor == oldPage.cursor ||
+        page.isLastPage ||
+        oldPage.isLastPage ||
+        nextPage == null) {
+      return page;
+    }
+
+    // Adjustment needed.
+
+    final adjustedCursor = adjustCursor(page, nextPage);
+    if (adjustedCursor != page.cursor) {
+      // if the cursor was adjusted, we don't need to load a new page
+      // as the adjustment means this page overlaps the next page
+      return Page(page.items, adjustedCursor, page.isLastPage);
+    } else {
+      // create a new page with page.cursor
+      // we can't emit before emitting the current page!
+      scheduleMicrotask(() {
+        final adjustmentPageState = PageState(
+            PageStatus.loading, createAdjustmentPage(page, oldPage), null);
+
+        _emit(ListState(
+          current.status,
+          [...current.pagesStates]..insert(index + 1, adjustmentPageState),
+          current.error,
+        ));
+
+        // we consider this an update
+        subscriptions.insert(index + 1, _NullStreamSubscription());
+        _loadPageAndSubscribe(page.cursor, index + 1);
+      });
+
+      return page;
+    }
+  }
+
+  /// Adjust the cursor of [page] so that if used it loads [nextPage] assuming
+  /// [nextPage] isn't updated.
+  ///
+  /// Due to an update to [page], the cursor of [page] will result in a
+  /// different page from [nextPage], thus an adjustment is needed.
+  ///
+  /// The cursor returned may be used to reobtain [nextPage], and it should
+  /// result in the same items as in [nextPage], assuming [nextPage] remained
+  /// the same.
+  ///
+  /// Return [page.cursor] if the two pages aren't related.
+  /// Return [nextPage.cursor] if [page] contains items from [nextPage] before
+  /// any items not in it.
+  /// Return a cursor to the last item before any items in [nextPage] otherwise.
+  PageCursor adjustCursor(Page<T> page, Page<T> nextPage);
+
+  /// Create an adjustment page which includes all the items in [oldPage] that
+  /// aren't in [page].
+  Page<T> createAdjustmentPage(Page<T> page, Page<T> oldPage) {
+    final items =
+        oldPage.items.whereNot((item) => page.items.contains(item)).toList();
+
+    // Using oldPage.cursor allows _adjustPage to skip loading a new page
+    // if the page loaded has the same cursor.
+    return Page(items, oldPage.cursor, page.isLastPage);
+  }
+
+  /// Defines an ordering of pages for adjustments purposes.
+  ///
+  /// If [other] is empty, it's order is after page (return a negative integer)
+  int compareTo(Page<T> page, Page<T> other);
 
   void _emit(ListState<T> state) {
     // Although it would be possible to just listen to `_states` stream and
@@ -313,4 +432,35 @@ class PaginationController<T> extends BehaviorStream<ListState<T>> {
       return Future.wait<void>(subscriptions.map((sub) => sub.cancel()));
     });
   }
+}
+
+/// A temporary value used when adjusting pages.
+class _NullStreamSubscription<T> extends StreamSubscription<T> {
+  @override
+  Future<E> asFuture<E>([E? futureValue]) {
+    return Future.value(futureValue);
+  }
+
+  @override
+  Future<void> cancel() {
+    return Future.value();
+  }
+
+  @override
+  bool get isPaused => false;
+
+  @override
+  void onData(void Function(T data)? handleData) {}
+
+  @override
+  void onDone(void Function()? handleDone) {}
+
+  @override
+  void onError(Function? handleError) {}
+
+  @override
+  void pause([Future<void>? resumeSignal]) {}
+
+  @override
+  void resume() {}
 }

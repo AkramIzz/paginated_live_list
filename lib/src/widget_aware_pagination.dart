@@ -82,19 +82,14 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
 
   int _resolvePageIndex(int index) {
     final pagesStates = controller.current.pagesStates;
-    if (controller.hasFixedPageSize) {
-      final pageSize = pagesStates.first.page.items.length;
-      return index ~/ pageSize;
-    } else {
-      int pageIndex = 0;
-      for (; pageIndex < pagesStates.length; ++pageIndex) {
-        final pageSize = pagesStates[pageIndex].page.items.length;
-        index -= pageSize;
-        // the condition is put here to break before adding 1 to pageIndex
-        if (index <= 0) break;
-      }
-      return pageIndex;
+    int pageIndex = 0;
+    for (; pageIndex < pagesStates.length; ++pageIndex) {
+      final pageSize = pagesStates[pageIndex].page.items.length;
+      index -= pageSize;
+      // the condition is put here to break before adding 1 to pageIndex
+      if (index <= 0) break;
     }
+    return pageIndex;
   }
 
   final LruSet<int> _activeSubs;

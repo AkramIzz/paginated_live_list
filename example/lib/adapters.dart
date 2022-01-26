@@ -3,10 +3,31 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:paginated_live_list/paginated_live_list.dart';
 
-class FirestorePageCursor<T extends Object?> implements PageCursor {
-  final DocumentSnapshot<T>? last;
+class Ordering {
+  final String field;
+  final bool descending;
 
-  FirestorePageCursor(this.last);
+  Ordering(this.field, {this.descending = false});
+}
+
+class FirestorePageCursor implements PageCursor {
+  final List values;
+
+  FirestorePageCursor(this.values);
+
+  @override
+  int get hashCode => Object.hashAll(values);
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        runtimeType == other.runtimeType && hashCode == other.hashCode;
+  }
+
+  @override
+  String toString() {
+    return values.toString();
+  }
 }
 
 const int kDefaultPageSize = 10;
@@ -25,27 +46,35 @@ const int kDefaultPageSize = 10;
 extension PaginatedQuerySnapshots on Query<Map<String, dynamic>> {
   Stream<Page<T>> paginatedSnapshots<T, E>(
     FirestorePageCursor? cursor, {
+    required List<Ordering> orderBy,
     required DocumentMapper<T> documentMapper,
     int pageSize = kDefaultPageSize,
     bool includeMetadataChanges = false,
   }) {
-    assert(cursor == null || cursor.last != null);
+    assert(cursor == null || cursor.values.isNotEmpty);
 
     var query = limit(pageSize);
+    for (final orderField in orderBy) {
+      query =
+          query.orderBy(orderField.field, descending: orderField.descending);
+    }
     if (cursor != null) {
-      query = query.startAfterDocument(cursor.last!);
+      query = query.startAfter(cursor.values);
     }
 
     return query
         .snapshots(includeMetadataChanges: includeMetadataChanges)
         .map((snapshot) {
       if (snapshot.size == 0) {
-        return Page<T>(const [], FirestorePageCursor(null), true);
+        return Page<T>(const [], FirestorePageCursor([]), true);
       }
 
+      final lastData = snapshot.docs.last.data();
       return Page<T>(
         snapshot.docs.map(documentMapper).toList(),
-        FirestorePageCursor(snapshot.docs.last),
+        FirestorePageCursor(
+          List.generate(orderBy.length, (i) => lastData[orderBy[i].field]),
+        ),
         snapshot.size != pageSize,
       );
     });

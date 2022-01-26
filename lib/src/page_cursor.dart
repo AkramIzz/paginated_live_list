@@ -1,4 +1,10 @@
-abstract class PageCursor {}
+abstract class PageCursor {
+  @override
+  int get hashCode;
+
+  @override
+  bool operator ==(Object other);
+}
 
 class Page<T> {
   /// the items in this page
