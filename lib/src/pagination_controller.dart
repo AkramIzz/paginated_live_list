@@ -75,8 +75,21 @@ class PageState<T> {
   /// the error this page had if any
   final Object? error;
 
-  PageState(this.status, this.page, this.error);
+  /// used to reference a page within [ListState.pagesStates]
+  final _PageKey key;
+
+  PageState(this.key, this.status, this.page, this.error);
 }
+
+/// Used to reference a page within [ListState.pagesStates]
+///
+/// Each page maintains a unique instance of this class. When updating a page
+/// it's key is used to identify where it resides in the pages list.
+///
+/// Due to adjustments when a cursor change, a page's index in
+/// [ListState.pagesStates] can change, thus it can't be used to identify the
+/// page that needs to be updated.
+class _PageKey {}
 
 class ListState<T> {
   /// the overall status of the paginated list.
@@ -151,10 +164,8 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Loads the next page. Typically called by the [PaginatedLiveList] widget
   void loadNextPage() {
     _emit(ListState(ListStatus.loading, current.pagesStates, current.error));
-    final index = subscriptions.length;
-    final cursor =
-        index == 0 ? null : current.pagesStates[index - 1].page.cursor;
-    _loadPageAndSubscribe(cursor, index);
+    final cursor = current.pagesStates.lastOrNull?.page.cursor;
+    _loadPageAndSubscribe(cursor, null, subscriptions.length);
   }
 
   /// Reloads the pages that had an error while loading the initial page or
@@ -199,17 +210,23 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
     final cursor =
         index == 0 ? null : current.pagesStates[index - 1].page.cursor;
-    _loadPageAndSubscribe(cursor, index);
+    _loadPageAndSubscribe(cursor, pageState.key, index);
 
-    return PageState(PageStatus.loading, pageState.page, pageState.error);
+    return PageState(
+      pageState.key,
+      PageStatus.loading,
+      pageState.page,
+      pageState.error,
+    );
   }
 
-  void _loadPageAndSubscribe(PageCursor? cursor, int pageIndex) {
+  void _loadPageAndSubscribe(PageCursor? cursor, _PageKey? key, int pageIndex) {
+    key ??= _PageKey();
     final listStream = orErrorWrapper.call(
       () => asUnicastStream(create: () => onLoadPage(cursor)),
     );
     final subscription = listStream.listen((res) {
-      _emit(_updatePage(pageIndex, res));
+      _emit(_updatePage(key!, res));
     });
     if (pageIndex >= subscriptions.length) {
       subscriptions.add(subscription);
@@ -239,7 +256,14 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   ///
   /// Note that a new [ListState] is returned regardless of whether the
   /// status has been updated or not.
-  ListState<T> _updatePage(int index, OrError<Page<T>> page) {
+  ListState<T> _updatePage(_PageKey key, OrError<Page<T>> page) {
+    int index = 0;
+    for (; index < current.pagesStates.length; ++index) {
+      if (current.pagesStates[index].key == key) {
+        break;
+      }
+    }
+
     print('updating page with index: $index');
     // both can be true, but can't be false; if it's not the last page it
     // must be an update.
@@ -266,7 +290,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
           );
         }
 
-        pagesStatuses[index] = PageState(PageStatus.loaded, v, null);
+        pagesStatuses[index] = PageState(key, PageStatus.loaded, v, null);
 
         final ListStatus status;
         if (isLastPageLoaded) {
@@ -282,8 +306,8 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
         );
       },
       error: (e) {
-        pagesStatuses[index] = PageState(
-            PageStatus.error, pagesStatuses[index]?.page ?? Page.initial(), e);
+        pagesStatuses[index] = PageState(key, PageStatus.error,
+            pagesStatuses[index]?.page ?? Page.initial(), e);
         final status =
             isLastPageLoaded && !isUpdate ? ListStatus.error : current.status;
         return ListState(
@@ -353,8 +377,8 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
       // create a new page with page.cursor
       // we can't emit before emitting the current page!
       scheduleMicrotask(() {
-        final adjustmentPageState = PageState(
-            PageStatus.loading, createAdjustmentPage(page, oldPage), null);
+        final adjustmentPageState = PageState(_PageKey(), PageStatus.loading,
+            createAdjustmentPage(page, oldPage), null);
 
         _emit(ListState(
           current.status,
@@ -364,7 +388,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
         // we consider this an update
         subscriptions.insert(index + 1, _NullStreamSubscription());
-        _loadPageAndSubscribe(page.cursor, index + 1);
+        _loadPageAndSubscribe(page.cursor, adjustmentPageState.key, index + 1);
       });
 
       return page;
