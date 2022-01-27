@@ -91,6 +91,14 @@ class OffersController extends PaginationController<Offer> {
         lastToDuplicateIndex = index;
       }
     }
+    if (lastToDuplicateIndex == -1) {
+      final cursorOffer = nextPage.items.last;
+      return Page(
+        const [],
+        FirestorePageCursor([Timestamp.fromDate(cursorOffer.createdAt)]),
+        page.isLastPage,
+      );
+    }
     final lastToDuplicate = page.items[lastToDuplicateIndex];
 
     print('new cursor: ${lastToDuplicate.price}:${lastToDuplicate.createdAt}');
