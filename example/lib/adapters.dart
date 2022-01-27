@@ -20,8 +20,17 @@ class FirestorePageCursor implements PageCursor {
 
   @override
   bool operator ==(Object other) {
-    return identical(this, other) ||
-        runtimeType == other.runtimeType && hashCode == other.hashCode;
+    if (identical(this, other)) {
+      return true;
+    } else if (other is! FirestorePageCursor) {
+      return false;
+    } else if (values.length != other.values.length) {
+      return false;
+    }
+    for (int i = 0; i < values.length; ++i) {
+      if (values[i] != other.values[i]) return false;
+    }
+    return true;
   }
 
   @override
