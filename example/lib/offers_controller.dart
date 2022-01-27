@@ -74,27 +74,30 @@ class OffersController extends PaginationController<Offer> {
   }
 
   @override
-  PageCursor adjustCursor(Page<Offer> page, Page<Offer> nextPage) {
+  Page<Offer> adjustCursor(Page<Offer> page, Page<Offer> nextPage) {
     print('adjusting cursor');
     if (nextPage.items.isEmpty) {
       print('cursor maintained');
-      return page.cursor!;
+      return page;
     }
     print(
         'adjusting cursor: ${page.items.last.price}:${page.items.last.createdAt}, ${nextPage.items.last.price}:${nextPage.items.last.createdAt}');
-    Offer lastNotContained = nextPage.items.last;
-    for (var offer in page.items) {
+    int lastToDuplicateIndex = -1;
+    for (var index = 0; index < page.items.length; ++index) {
+      final offer = page.items[index];
       if (nextPage.items.firstWhereOrNull((it) => it.id == offer.id) != null) {
         break;
       } else {
-        lastNotContained = offer;
+        lastToDuplicateIndex = index;
       }
     }
+    final lastToDuplicate = page.items[lastToDuplicateIndex];
 
-    print(
-        'new cursor: ${lastNotContained.price}:${lastNotContained.createdAt}');
-    return FirestorePageCursor(
-      [Timestamp.fromDate(lastNotContained.createdAt)],
+    print('new cursor: ${lastToDuplicate.price}:${lastToDuplicate.createdAt}');
+    return Page(
+      page.items.slice(0, lastToDuplicateIndex + 1),
+      FirestorePageCursor([Timestamp.fromDate(lastToDuplicate.createdAt)]),
+      page.isLastPage,
     );
   }
 }

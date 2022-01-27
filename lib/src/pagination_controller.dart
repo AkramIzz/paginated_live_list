@@ -368,11 +368,11 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
     // Adjustment needed.
 
-    final adjustedCursor = adjustCursor(page, nextPage);
-    if (adjustedCursor != page.cursor) {
+    final adjustedPage = adjustCursor(page, nextPage);
+    if (adjustedPage.cursor != page.cursor) {
       // if the cursor was adjusted, we don't need to load a new page
       // as the adjustment means this page overlaps the next page
-      return Page(page.items, adjustedCursor, page.isLastPage);
+      return adjustedPage;
     } else {
       // create a new page with page.cursor
       // we can't emit before emitting the current page!
@@ -398,8 +398,11 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Adjust the cursor of [page] so that if used it loads [nextPage] assuming
   /// [nextPage] isn't updated.
   ///
+  /// The items needs to be adjusted as well so that no items are duplicated.
+  ///
   /// Due to an update to [page], the cursor of [page] will result in a
-  /// different page from [nextPage], thus an adjustment is needed.
+  /// different page from [nextPage] and some items may be duplicated, thus an
+  /// adjustment is needed.
   ///
   /// The cursor returned may be used to reobtain [nextPage], and it should
   /// result in the same items as in [nextPage], assuming [nextPage] remained
@@ -409,7 +412,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Return [nextPage.cursor] if [page] contains items from [nextPage] before
   /// any items not in it.
   /// Return a cursor to the last item before any items in [nextPage] otherwise.
-  PageCursor adjustCursor(Page<T> page, Page<T> nextPage);
+  Page<T> adjustCursor(Page<T> page, Page<T> nextPage);
 
   /// Create an adjustment page which includes all the items in [oldPage] that
   /// aren't in [page].

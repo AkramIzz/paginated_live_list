@@ -4,7 +4,7 @@ import 'package:paginated_live_list/paginated_live_list.dart';
 
 class TestPaginationController extends PaginationController<int> {
   @override
-  PageCursor adjustCursor(Page<int> page, Page<int>? nextPage) {
+  Page<int> adjustCursor(Page<int> page, Page<int>? nextPage) {
     throw UnimplementedError();
   }
 
