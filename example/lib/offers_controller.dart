@@ -28,8 +28,6 @@ class OffersController extends PaginationController<Offer> {
   }
 
   Future<void> onDeleteOffer(Offer offer) {
-    _price = 0;
-    _day = 0;
     return OffersRepository.instance.delete(offer);
   }
 
@@ -54,6 +52,8 @@ class OffersController extends PaginationController<Offer> {
   }
 
   Future<void> onClearOffers() async {
+    _price = 0;
+    _day = 0;
     await OffersRepository.instance.deleteAll(current.items);
   }
 
