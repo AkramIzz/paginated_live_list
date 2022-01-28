@@ -281,8 +281,6 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
     final canUpdateStatus = current.status != ListStatus.reloading;
 
-    final oldPage = isUpdate ? current.pagesStates[index].page : null;
-
     final List<PageState<T>?> pagesStatuses = List.of(current.pagesStates);
     if (!isUpdate) {
       pagesStatuses.add(null);
@@ -294,7 +292,6 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
           v = _adjustPage(
             index,
             page: v,
-            oldPage: oldPage,
             pagesStates: pagesStatuses.cast(),
           );
         }
@@ -346,20 +343,35 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// - otherwise create a new page after page using page's cursor, and when the
   /// new page loads, [_adjustPage] will be called again. This allows multiple
   /// pages to be loaded if more than a single page size items were inserted.
-  Page<T> _adjustPage(int index,
-      {required Page<T> page,
-      required Page<T>? oldPage,
-      required List<PageState<T>?> pagesStates}) {
-    print('adjusting page with index: $index');
-    var nextPage =
-        index + 1 < pagesStates.length ? pagesStates[index + 1]?.page : null;
+  Page<T> _adjustPage(
+    int index, {
+    required Page<T> page,
+    required List<PageState<T>> pagesStates,
+  }) {
+    print('adjusting page with index: $index, ${page.items}');
+    final oldPage = index < pagesStates.length ? pagesStates[index].page : null;
 
+    var nextPage =
+        index + 1 < pagesStates.length ? pagesStates[index + 1].page : null;
     // while the page's cursor points to a page after next page remove next page
     while (nextPage != null && compareTo(page, nextPage) >= 0) {
       pagesStates.removeAt(index + 1);
-      index += 1;
       nextPage =
-          index + 1 < pagesStates.length ? pagesStates[index + 1]?.page : null;
+          index + 1 < pagesStates.length ? pagesStates[index + 1].page : null;
+    }
+
+    if (page.items.isEmpty) {
+      // remove all pages after this page
+      final key = pagesStates[index].key;
+      scheduleMicrotask(() {
+        final index = current.pagesStates.indexWhere((p) => p.key == key);
+        _emit(ListState(
+          current.status,
+          current.pagesStates.slice(0, index + 1),
+          current.error,
+        ));
+      });
+      return page;
     }
 
     // If this is a new page
