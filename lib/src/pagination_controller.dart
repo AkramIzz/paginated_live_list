@@ -89,7 +89,20 @@ class PageState<T> {
 /// Due to adjustments when a cursor change, a page's index in
 /// [ListState.pagesStates] can change, thus it can't be used to identify the
 /// page that needs to be updated.
-class _PageKey {}
+class _PageKey {
+  int? _debugValue;
+
+  _PageKey([this._debugValue]) {
+    _debugValue ??= _id++;
+  }
+
+  @override
+  String toString() {
+    return '$runtimeType($_debugValue)';
+  }
+
+  static var _id = 0;
+}
 
 class ListState<T> {
   /// the overall status of the paginated list.
