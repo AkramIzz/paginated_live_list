@@ -257,12 +257,8 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Note that a new [ListState] is returned regardless of whether the
   /// status has been updated or not.
   ListState<T> _updatePage(_PageKey key, OrError<Page<T>> page) {
-    int index = 0;
-    for (; index < current.pagesStates.length; ++index) {
-      if (current.pagesStates[index].key == key) {
-        break;
-      }
-    }
+    int index = current.pagesStates.indexWhere((p) => p.key == key);
+    index = index == -1 ? current.pagesStates.length : index;
 
     print('updating page with index: $index');
     // both can be true, but can't be false; if it's not the last page it
