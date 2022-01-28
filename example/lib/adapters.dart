@@ -35,7 +35,7 @@ class FirestorePageCursor implements PageCursor {
 
   @override
   String toString() {
-    return values.toString();
+    return '$runtimeType($values)';
   }
 }
 

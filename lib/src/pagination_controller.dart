@@ -273,7 +273,6 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
     int index = current.pagesStates.indexWhere((p) => p.key == key);
     index = index == -1 ? current.pagesStates.length : index;
 
-    print('updating page with index: $index');
     // both can be true, but can't be false; if it's not the last page it
     // must be an update.
     final isUpdate = index <= current.pagesStates.length - 1;
@@ -348,7 +347,6 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
     required Page<T> page,
     required List<PageState<T>> pagesStates,
   }) {
-    print('adjusting page with index: $index, ${page.items}');
     final oldPage = index < pagesStates.length ? pagesStates[index].page : null;
 
     var nextPage =
