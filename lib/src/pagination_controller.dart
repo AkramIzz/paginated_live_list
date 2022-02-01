@@ -380,14 +380,9 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
     // If this is a new page
     // or cursor hasn't changed
-    // or there's no page after this page.
-    // or the page after this page isn't loaded yet
-    // or there's no next page (will be loaded when user scrolls)
-    if (oldPage == null ||
-        page.cursor == oldPage.cursor ||
-        page.isLastPage ||
-        oldPage.isLastPage ||
-        nextPage == null) {
+    // or there's no page after this page (either this is the last page or
+    // the next page hasn't been loaded yet).
+    if (oldPage == null || page.cursor == oldPage.cursor || nextPage == null) {
       return page;
     }
 
@@ -442,8 +437,11 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Create an adjustment page which includes all the items in [oldPage] that
   /// aren't in [page].
   Page<T> createAdjustmentPage(Page<T> page, Page<T> oldPage) {
+    // The items not in page may have been deleted, we assume they aren't at
+    // first but the adjustment page is updated as soon as possible to reflect
+    // the true dataset.
     final items =
-        oldPage.items.whereNot((item) => page.items.contains(item)).toList();
+        oldPage.items.where((item) => !page.items.contains(item)).toList();
 
     // Using oldPage.cursor allows _adjustPage to skip loading a new page
     // if the page loaded has the same cursor.
@@ -452,7 +450,13 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
 
   /// Defines an ordering of pages for adjustments purposes.
   ///
-  /// If [other] is empty, it's order is after page (return a negative integer)
+  /// - If [page] is empty or [page.isLastPage] is true, it's order is after
+  /// other.
+  /// - If [other] is empty or [other.isLastPage] is true, it's order is after
+  /// page.
+  /// - If both pages are empty or both are last pages, they have the same
+  /// order.
+  /// - Otherwise compare the cursors of the pages
   int compareTo(Page<T> page, Page<T> other);
 
   void _emit(ListState<T> state) {
