@@ -1,8 +1,6 @@
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
-import 'package:example/adapters.dart';
 import 'package:paginated_live_list/paginated_live_list.dart';
 
 import 'package:example/offer_model.dart';
@@ -47,8 +45,12 @@ class OffersController extends PaginationController<Offer> {
   }
 
   int compareTo(Page<Offer> page, Page<Offer> other) {
-    if (other.items.isEmpty || page.items.isEmpty) {
-      return other.items.isEmpty ? -1 : 1;
+    if ((page.items.isEmpty) && (other.items.isEmpty)) {
+      return 0;
+    } else if (page.items.isEmpty) {
+      return 1;
+    } else if (other.items.isEmpty) {
+      return -1;
     }
 
     return -1 * page.items.last.createdAt.compareTo(other.items.last.createdAt);
@@ -62,26 +64,25 @@ class OffersController extends PaginationController<Offer> {
     int lastToDuplicateIndex = -1;
     for (var index = 0; index < page.items.length; ++index) {
       final offer = page.items[index];
-      if (nextPage.items.firstWhereOrNull((it) => it.id == offer.id) != null) {
+      if (nextPage.items.contains(offer)) {
         break;
       } else {
         lastToDuplicateIndex = index;
       }
     }
     if (lastToDuplicateIndex == -1) {
-      final cursorOffer = nextPage.items.last;
+      final cursor = nextPage.cursor;
       return Page(
         const [],
-        FirestorePageCursor([Timestamp.fromDate(cursorOffer.createdAt)]),
+        cursor,
         page.isLastPage,
       );
     }
-    final lastToDuplicate = page.items[lastToDuplicateIndex];
 
-    return Page(
+    return OffersRepository.instance.createPageCursor(Page(
       page.items.slice(0, lastToDuplicateIndex + 1),
-      FirestorePageCursor([Timestamp.fromDate(lastToDuplicate.createdAt)]),
+      null,
       page.isLastPage,
-    );
+    ));
   }
 }
