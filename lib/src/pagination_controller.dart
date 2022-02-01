@@ -353,6 +353,8 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
         index + 1 < pagesStates.length ? pagesStates[index + 1].page : null;
     // while the page's cursor points to a page after next page remove next page
     while (nextPage != null && compareTo(page, nextPage) >= 0) {
+      final sub = subscriptions.removeAt(index + 1);
+      sub.cancel();
       pagesStates.removeAt(index + 1);
       nextPage =
           index + 1 < pagesStates.length ? pagesStates[index + 1].page : null;
@@ -363,6 +365,10 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
       final key = pagesStates[index].key;
       scheduleMicrotask(() {
         final index = current.pagesStates.indexWhere((p) => p.key == key);
+        for (var sub in subscriptions.slice(index + 1)) {
+          sub.cancel();
+        }
+        subscriptions.length = index + 1;
         _emit(ListState(
           current.status,
           current.pagesStates.slice(0, index + 1),
