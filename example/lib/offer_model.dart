@@ -15,6 +15,18 @@ class Offer {
     required this.createdAt,
   });
 
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  bool operator ==(Object? other) {
+    if (other is Offer && id == other.id) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   factory Offer.fromJson(Map<String, dynamic> json) {
     return Offer(
       id: json['id'],

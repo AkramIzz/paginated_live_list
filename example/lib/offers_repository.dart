@@ -15,6 +15,7 @@ abstract class OffersRepository {
   Future<void> delete(Offer offer);
   Future<void> deleteAll(List<Offer> offers);
   Stream<Page<Offer>> list(covariant PageCursor? cursor);
+  Page<Offer> createPageCursor(Page<Offer> page);
 
   static final OffersRepository instance = FirebaseOffersRepository();
 }
@@ -51,10 +52,18 @@ class FirebaseOffersRepository implements OffersRepository {
 
   @override
   Stream<Page<Offer>> list(FirestorePageCursor? cursor) {
-    final query = ref.orderBy('createdAt');
-    return query.paginatedSnapshots(
+    return ref.paginatedSnapshots(
       cursor,
       documentMapper: (doc) => Offer.fromJson(doc.data()),
     );
+  }
+
+  @override
+  Page<Offer> createPageCursor(Page<Offer> page) {
+    final last = page.items.last;
+    return Page(
+        page.items,
+        FirestorePageCursor(Timestamp.fromDate(last.createdAt)),
+        page.isLastPage);
   }
 }
