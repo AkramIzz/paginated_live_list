@@ -18,30 +18,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set Flutter version
-      run: |
-        set -e
-        _flutterVersion=$( awk '
-          /environment/{
-            flag=1
-          }
-          flag && /flutter:/{
-            print $NF;
-            flag=""
-          }' pubspec.yaml | sed 's/\^//g' )
-        echo "FLUTTER_VERSION=${_flutterVersion}" >> $GITHUB_ENV
-      working-directory: ${{ env.directory }}
-
     - name: Cache Flutter
       id: cache-flutter
       uses: actions/cache@v2
       with:
         path: ${{ env.flutter_path }}
-        key: ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}
+        key: ${{ runner.os }}-flutter-stable
 
     - uses: subosito/flutter-action@v1
       with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
 
     - name: Check format
       run: flutter format --dry-run --set-exit-if-changed .

@@ -1,5 +1,3 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:paginated_live_list/paginated_live_list.dart';
 
 class TestPaginationController extends PaginationController<int> {
@@ -24,8 +22,4 @@ class TestPaginationController extends PaginationController<int> {
   }
 }
 
-void main() {
-  test('can create a controller', () {
-    expect(TestPaginationController() is PaginationController<int>, true);
-  });
-}
+void main() {}
