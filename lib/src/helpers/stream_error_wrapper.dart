@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'or_error.dart';
+import 'result.dart';
 
 final orErrorWrapper = _StreamOrErrorWrapper();
 
@@ -9,18 +9,18 @@ final orErrorWrapper = _StreamOrErrorWrapper();
 /// All errors, including those raised within the callback before creating the
 /// stream, are caught and added as events.
 class _StreamOrErrorWrapper {
-  Stream<OrError<T>> call<T>(Stream<T> callback()) {
+  Stream<Result<T>> call<T>(Stream<T> callback()) {
     try {
       return callback().transform(StreamTransformer.fromHandlers(
         handleError: (error, st, sink) {
-          sink.add(OrError.error(error, st));
+          sink.add(Result.error(error, st));
         },
         handleData: (data, sink) {
-          sink.add(OrError.value(data));
+          sink.add(Result.value(data));
         },
       ));
     } catch (e, st) {
-      return Stream.value(OrError.error(e, st));
+      return Stream.value(Result.error(e, st));
     }
   }
 }

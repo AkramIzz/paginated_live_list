@@ -5,11 +5,11 @@ class _ErrorHolder {
   _ErrorHolder(this.error, this.stackTrace);
 }
 
-abstract class OrError<V> {
-  OrError._();
+abstract class Result<V> {
+  Result._();
 
-  factory OrError.value(V value) => _Value<V>._(value);
-  factory OrError.error(Object? e, StackTrace st) =>
+  factory Result.value(V value) => _Value<V>._(value);
+  factory Result.error(Object? e, StackTrace st) =>
       _Error<V>._(_ErrorHolder(e, st));
 
   _Error<V> get _asError => this as _Error<V>;
@@ -33,14 +33,14 @@ abstract class OrError<V> {
         : error(this._asError._error);
   }
 
-  OrError<VM> mapValue<VM>(
+  Result<VM> mapValue<VM>(
     VM Function(V v) value,
   ) {
     return this.isValue
-        ? OrError.value(
+        ? Result.value(
             (value).call(this._asValue._value),
           )
-        : OrError.error(
+        : Result.error(
             this._asError._error.error, this._asError._error.stackTrace);
   }
 
@@ -54,7 +54,7 @@ abstract class OrError<V> {
   }
 }
 
-class _Value<V> extends OrError<V> {
+class _Value<V> extends Result<V> {
   _Value._(this._value) : super._();
 
   final V _value;
@@ -66,7 +66,7 @@ class _Value<V> extends OrError<V> {
   bool get isValue => true;
 }
 
-class _Error<V> extends OrError<V> {
+class _Error<V> extends Result<V> {
   _Error._(this._error) : super._();
 
   final _ErrorHolder _error;
