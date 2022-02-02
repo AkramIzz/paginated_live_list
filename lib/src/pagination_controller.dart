@@ -4,7 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
 import 'page_cursor.dart';
-import 'helpers/or_error.dart';
+import 'helpers/result.dart';
 import 'helpers/as_unicast_stream.dart';
 import 'helpers/behavior_stream.dart';
 import 'helpers/stream_error_wrapper.dart';
@@ -169,7 +169,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   StreamController<ListState<T>> _states;
 
   /// An ordered list of the pages updates streams subscriptions
-  final subscriptions = <PageKey, StreamSubscription<OrError<Page<T>>>>{};
+  final subscriptions = <PageKey, StreamSubscription<Result<Page<T>>>>{};
 
   /// The current and last emitted list state.
   ///
@@ -268,7 +268,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   ///
   /// Note that a new [ListState] is returned regardless of whether the
   /// status has been updated or not.
-  ListState<T> _updatePage(PageKey key, OrError<Page<T>> page) {
+  ListState<T> _updatePage(PageKey key, Result<Page<T>> page) {
     int index = current.pagesStates.indexWhere((p) => p.key == key);
     index = index == -1 ? current.pagesStates.length : index;
 
