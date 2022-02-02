@@ -15,7 +15,7 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
     // since there's no way to tell which pages are visible.
     // instead of trying to guess, we rely on [onItemInitialized] calls to
     // resume the subscriptions to visible pages
-    controller.subscriptions.forEach((sub) => sub.pause());
+    controller.subscriptions.values.forEach((sub) => sub.pause());
   }
 
   int get maximumActiveSubscriptions => _activeSubs.maximumSize;
@@ -26,7 +26,7 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
     if (state == AppLifecycleState.paused) {
       _pauseTimer = Timer(
         WidgetAwarePagesSubscriptionsHandler.durationToPauseAfterAppPaused,
-        () => controller.subscriptions.forEach((s) => s.pause()),
+        () => controller.subscriptions.values.forEach((s) => s.pause()),
       );
     } else if (state == AppLifecycleState.resumed) {
       if (_pauseTimer == null) return;
@@ -37,7 +37,7 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
         // This won't resume subs not in _activeSubs.
         // These are subs that were paused before, and the call to resume only
         // undoes one pause.
-        controller.subscriptions.forEach((s) => s.resume());
+        controller.subscriptions.values.forEach((s) => s.resume());
       }
     }
   }
@@ -47,40 +47,40 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
 
   @override
   void onItemInitialized(int index) {
-    final pageIndex = _resolvePageIndex(index);
-    _activateSub(pageIndex);
+    final pageKey = _resolvePageKey(index);
+    _activateSub(pageKey);
   }
 
-  void _activateSub(int subIndex) {
-    if (!_activeSubs.contains(subIndex)) {
-      _resumeSubIfPaused(subIndex);
-      final removedSub = _activeSubs.put(subIndex);
+  void _activateSub(PageKey key) {
+    if (!_activeSubs.contains(key)) {
+      _resumeSubIfPaused(key);
+      final removedSub = _activeSubs.put(key);
       if (removedSub != null) {
         _scheduleSubPause(removedSub);
       }
     }
   }
 
-  final _timers = <int, Timer>{};
-  void _scheduleSubPause(int subIndex) {
-    _timers[subIndex] = Timer(
+  final _timers = <PageKey, Timer>{};
+  void _scheduleSubPause(PageKey key) {
+    _timers[key] = Timer(
         WidgetAwarePagesSubscriptionsHandler.durationToPauseAfterPageSwap, () {
-      _timers.remove(subIndex);
-      controller.subscriptions[subIndex].pause();
+      _timers.remove(key);
+      controller.subscriptions[key]?.pause();
     });
   }
 
-  void _resumeSubIfPaused(int subIndex) {
-    if (_timers[subIndex] != null) {
+  void _resumeSubIfPaused(PageKey key) {
+    if (_timers[key] != null) {
       // subscription haven't been paused yet
-      _timers.remove(subIndex)!.cancel();
+      _timers.remove(key)!.cancel();
     } else {
       // subscription was paused
-      controller.subscriptions[subIndex].resume();
+      controller.subscriptions[key]?.resume();
     }
   }
 
-  int _resolvePageIndex(int index) {
+  PageKey _resolvePageKey(int index) {
     final pagesStates = controller.current.pagesStates;
     int pageIndex = 0;
     for (; pageIndex < pagesStates.length; ++pageIndex) {
@@ -89,10 +89,10 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
       // the condition is put here to break before adding 1 to pageIndex
       if (index <= 0) break;
     }
-    return pageIndex;
+    return pagesStates[pageIndex].key;
   }
 
-  final LruSet<int> _activeSubs;
+  final LruSet<PageKey> _activeSubs;
 }
 
 abstract class WidgetAwarePagesSubscriptionsHandler<T> {
