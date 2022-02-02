@@ -1,15 +1,17 @@
 name: paginated_live_list
 description: A Paginated Live List Widget
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/AkramIzz/paginated_live_list
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
-  flutter: ^2.5.3
+  flutter: ">=2.5.3"
 
 dependencies:
   flutter:
     sdk: flutter
+
+  collection: ^1.15.0
 
 dev_dependencies:
   flutter_test:
