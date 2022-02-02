@@ -1,20 +1,15 @@
-# paginated_live_list
-
-A Paginated Live List Widget
+A paginated live list widget that handles pagination, subscriptions to updates, updating pages, and error handling.
 
 ## Getting Started
 
-For usage example see the example directory
+The package provide a widget called `PaginatedLiveList` that takes a concrete `PaginationController` and display a paginated live list.
 
-## Road Map
+For usage example see the example directory.
 
-- [ ] add firebase example
-- [ ] add tests
-- [ ] contribution and issues guide
-- [ ] refresh: load first page -> remove all pages -> add first page
-- [ ] support grid view and slivers
-- [ ] make WidgetAwarePagesSubscriptionsHandler an configurable opt-in option
-- [ ] lru cache for pages (not subscriptions but actually remove pages from memory)
-- [ ] support item insertion and removal animations (with diffing or with changes supplied by user)
-- [ ] update widget with more options and builders:
-  - item, firstPageError, newPageError, oldPageError, firstPageProgress, newPageProgress, oldPageProgress, emptyList, endOfList
+## Implementing a PaginationController
+
+You need to implement `Page` comparison with `PaginationController.compareTo`, `PageCursor` adjustment with `PaginationController.adjustCursor`, and loading of new pages with `PaginationController.onLoadPage`.
+
+`PageCursor` adjustment is needed when a page changes it's cursor due to an update. The adjustment allows the PaginationController to maintain the current pages by not having to reload all the pages after the page that changed it's cursor.
+
+See the example for an implementation of a `PaginationController`
