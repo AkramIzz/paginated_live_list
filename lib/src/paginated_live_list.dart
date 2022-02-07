@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 import 'pagination_controller.dart';
@@ -9,27 +10,56 @@ import 'widget_lifecycle_listener.dart';
 
 class PaginatedLiveList<T> extends StatefulWidget {
   final PaginationController<T> controller;
-  final ScrollController? scrollController;
+  final bool kickStart;
   final Widget Function(BuildContext, ListState<T>, int) itemBuilder;
   final void Function(BuildContext context, Object? error)? onError;
-  final Widget Function(BuildContext context, Object? error)?
-      errorMessageBuilder;
   final Widget Function(BuildContext context)? progressBuilder;
-  final ScrollPhysics? physics;
   final Widget? noItemsWidget;
-  final bool kickStart;
+  final Axis scrollDirection;
+  final bool reverse;
+  final ScrollController? scrollController;
+  final bool? primary;
+  final ScrollPhysics? physics;
+  final bool shrinkWrap;
+  final EdgeInsetsGeometry? padding;
+  final double? itemExtent;
+  final Widget? prototypeItem;
+  final bool addAutomaticKeepAlives;
+  final bool addRepaintBoundaries;
+  final bool addSemanticIndexes;
+  final double? cacheExtent;
+  final int? semanticChildCount;
+  final DragStartBehavior dragStartBehavior;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+  final String? restorationId;
+  final Clip clipBehavior;
 
   const PaginatedLiveList({
+    Key? key,
     required this.controller,
-    this.scrollController,
+    this.kickStart = true,
     required this.itemBuilder,
     this.noItemsWidget,
-    this.errorMessageBuilder,
     this.progressBuilder,
     this.onError,
+    this.scrollDirection = Axis.vertical,
+    this.reverse = false,
+    this.scrollController,
+    this.primary,
     this.physics,
-    this.kickStart = true,
-    Key? key,
+    this.shrinkWrap = false,
+    this.padding,
+    this.itemExtent,
+    this.prototypeItem,
+    this.addAutomaticKeepAlives = true,
+    this.addRepaintBoundaries = true,
+    this.addSemanticIndexes = true,
+    this.cacheExtent,
+    this.semanticChildCount,
+    this.dragStartBehavior = DragStartBehavior.start,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.restorationId,
+    this.clipBehavior = Clip.hardEdge,
   }) : super(key: key);
 
   @override
@@ -140,7 +170,23 @@ class _PaginatedLiveListState<T> extends State<PaginatedLiveList<T>> {
                   child: widget.itemBuilder(context, state, i),
                 );
               },
+              addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+              addRepaintBoundaries: widget.addRepaintBoundaries,
+              addSemanticIndexes: widget.addSemanticIndexes,
+              cacheExtent: widget.cacheExtent,
+              clipBehavior: widget.clipBehavior,
+              dragStartBehavior: widget.dragStartBehavior,
+              itemExtent: widget.itemExtent,
+              keyboardDismissBehavior: widget.keyboardDismissBehavior,
+              padding: widget.padding,
               physics: widget.physics,
+              primary: widget.primary,
+              prototypeItem: widget.prototypeItem,
+              restorationId: widget.restorationId,
+              reverse: widget.reverse,
+              scrollDirection: widget.scrollDirection,
+              semanticChildCount: widget.semanticChildCount,
+              shrinkWrap: widget.shrinkWrap,
             );
           },
         ),
