@@ -23,52 +23,37 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends StatelessWidget {
   MyHomePage({Key? key}) : super(key: key);
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  late final OffersController controller;
-
-  @override
-  initState() {
-    super.initState();
-    controller = OffersController();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: ActionsButton(controller: controller),
-      body: PaginatedLiveList<Offer>(
-        controller: controller,
-        itemBuilder: (context, state, index) {
-          final item = state.items[index];
-          return Dismissible(
-            key: ValueKey(item.id),
-            direction: DismissDirection.endToStart,
-            onDismissed: (direction) {
-              controller.onDeleteOffer(item);
-            },
-            background: _buildDismissBackground(Alignment.centerRight),
-            child: ListTile(
-              leading: _buildAvatar(item.author),
-              title: Text('\$${item.price}'),
-              subtitle: Text('until ${_formatDate(item.availableUntil)}'),
-              trailing: Text('on ${_formatDate(item.createdAt)}'),
-            ),
-          );
-        },
-        progressBuilder: (context) {
-          return Center(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(),
-          ));
-        },
+    return PaginationControllerProvider<Offer>(
+      create: (context) => OffersController(),
+      child: Scaffold(
+        floatingActionButton: ActionsButton(),
+        body: PaginatedLiveList<Offer>(
+          controller: null,
+          itemBuilder: (context, state, index) {
+            final item = state.items[index];
+            return Dismissible(
+              key: ValueKey(item.id),
+              direction: DismissDirection.endToStart,
+              onDismissed: (direction) {
+                PaginationControllerProvider.of<Offer, OffersController>(
+                        context)!
+                    .onDeleteOffer(item);
+              },
+              background: _buildDismissBackground(Alignment.centerRight),
+              child: ListTile(
+                leading: _buildAvatar(item.author),
+                title: Text('\$${item.price}'),
+                subtitle: Text('until ${_formatDate(item.availableUntil)}'),
+                trailing: Text('on ${_formatDate(item.createdAt)}'),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -101,10 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
 class ActionsButton extends StatefulWidget {
   const ActionsButton({
     Key? key,
-    required this.controller,
   }) : super(key: key);
-
-  final OffersController controller;
 
   @override
   State<ActionsButton> createState() => _ActionsButtonState();
@@ -137,12 +119,16 @@ class _ActionsButtonState extends State<ActionsButton> {
             '+10',
             style: TextStyle(fontSize: 18.0),
           ),
-          onPressed: () => widget.controller.onAddOffers(),
+          onPressed: () =>
+              PaginationControllerProvider.of<Offer, OffersController>(context)!
+                  .onAddOffers(),
         ),
         separator,
         FloatingActionButton(
           child: Icon(Icons.clear_all),
-          onPressed: () => widget.controller.onClearOffers(),
+          onPressed: () =>
+              PaginationControllerProvider.of<Offer, OffersController>(context)!
+                  .onClearOffers(),
         ),
         separator,
         FloatingActionButton(

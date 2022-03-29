@@ -92,6 +92,12 @@ class _WidgetAwarePagesSubscriptionsHandlerLruSetImpl<T>
     return pagesStates[pageIndex].key;
   }
 
+  @override
+  void dispose() {
+    _timers.values.forEach((timer) => timer.cancel());
+    _pauseTimer?.cancel();
+  }
+
   final LruSet<PageKey> _activeSubs;
 }
 
@@ -104,6 +110,7 @@ abstract class WidgetAwarePagesSubscriptionsHandler<T> {
   void onAppLifecycleChanged(AppLifecycleState state);
   void onItemDisposed(int index);
   void onItemInitialized(int index);
+  void dispose();
 
   static var durationToPauseAfterAppPaused = const Duration(minutes: 5);
   static var durationToPauseAfterPageSwap = const Duration(seconds: 30);
