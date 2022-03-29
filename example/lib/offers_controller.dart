@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:paginated_live_list/paginated_live_list.dart';
 
 import 'package:example/offer_model.dart';
@@ -44,45 +43,15 @@ class OffersController extends PaginationController<Offer> {
     return OffersRepository.instance.list(cursor);
   }
 
-  int compareTo(Page<Offer> page, Page<Offer> other) {
-    if ((page.items.isEmpty) && (other.items.isEmpty)) {
-      return 0;
-    } else if (page.items.isEmpty) {
-      return 1;
-    } else if (other.items.isEmpty) {
-      return -1;
-    }
-
+  @override
+  int comparePagesOrder(Page<Offer> page, Page<Offer> other) {
+    // Since pages are in descending order, we multiply the compareTo result by
+    // -1.
     return -1 * page.items.last.createdAt.compareTo(other.items.last.createdAt);
   }
 
   @override
-  Page<Offer> adjustCursor(Page<Offer> page, Page<Offer> nextPage) {
-    if (nextPage.items.isEmpty) {
-      return page;
-    }
-    int lastToDuplicateIndex = -1;
-    for (var index = 0; index < page.items.length; ++index) {
-      final offer = page.items[index];
-      if (nextPage.items.contains(offer)) {
-        break;
-      } else {
-        lastToDuplicateIndex = index;
-      }
-    }
-    if (lastToDuplicateIndex == -1) {
-      final cursor = nextPage.cursor;
-      return Page(
-        const [],
-        cursor,
-        page.isLastPage,
-      );
-    }
-
-    return OffersRepository.instance.createPageCursor(Page(
-      page.items.slice(0, lastToDuplicateIndex + 1),
-      null,
-      page.isLastPage,
-    ));
+  Page<Offer> updateCursorOfAdjustedPage(Page<Offer> page) {
+    return OffersRepository.instance.createPageCursor(page);
   }
 }
