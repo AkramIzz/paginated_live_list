@@ -4,12 +4,6 @@ import 'package:paginated_live_list/paginated_live_list.dart';
 
 import 'offer_model.dart';
 
-extension LetValue<T extends Object> on T {
-  let<R>(R Function(T value) callback) {
-    callback(this);
-  }
-}
-
 abstract class OffersRepository {
   Future<List<Offer>> createMultiple(List<Offer> offers);
   Future<void> delete(Offer offer);

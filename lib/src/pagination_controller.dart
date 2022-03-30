@@ -162,7 +162,7 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// the requested page is the first page.
   ///
   /// There's no mandate on whether the stream should close after an error.
-  Stream<Page<T>> onLoadPage(PageCursor? cursor);
+  Stream<Page<T>> onLoadPage(covariant PageCursor? cursor);
 
   PaginationController() : _states = StreamController<ListState<T>>.broadcast();
 
@@ -432,7 +432,40 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// Return [nextPage.cursor] if [page] contains items from [nextPage] before
   /// any items not in it.
   /// Return a cursor to the last item before any items in [nextPage] otherwise.
-  Page<T> adjustCursor(Page<T> page, Page<T> nextPage);
+  Page<T> adjustCursor(Page<T> page, Page<T> nextPage) {
+    if (nextPage.items.isEmpty) {
+      return page;
+    }
+    int lastToDuplicateIndex = -1;
+    for (var index = 0; index < page.items.length; ++index) {
+      final offer = page.items[index];
+      if (nextPage.items.contains(offer)) {
+        break;
+      } else {
+        lastToDuplicateIndex = index;
+      }
+    }
+    if (lastToDuplicateIndex == -1) {
+      final cursor = nextPage.cursor;
+      return Page(
+        const [],
+        cursor,
+        page.isLastPage,
+      );
+    }
+
+    final items = page.items.slice(0, lastToDuplicateIndex + 1);
+    return updateCursorOfAdjustedPage(
+      Page(items, page.cursor, page.isLastPage),
+    );
+  }
+
+  /// Returns a page with updated cursor for when a page is adjusted.
+  ///
+  /// The page parameter will have it's old cursor but the new items it holds.
+  /// A cursor that loads the next items after [page.items] should be the value
+  /// of the cursor of the returned [Page].
+  Page<T> updateCursorOfAdjustedPage(Page<T> page);
 
   /// Create an adjustment page which includes all the items in [oldPage] that
   /// aren't in [page].
@@ -454,10 +487,26 @@ abstract class PaginationController<T> extends BehaviorStream<ListState<T>> {
   /// other.
   /// - If [other] is empty or [other.isLastPage] is true, it's order is after
   /// page.
-  /// - If both pages are empty or both are last pages, they have the same
+  /// - If both pages are last pages, they have the same
   /// order.
   /// - Otherwise compare the cursors of the pages
-  int compareTo(Page<T> page, Page<T> other);
+  int compareTo(Page<T> page, Page<T> other) {
+    if (page.isLastPage && other.isLastPage) {
+      return 0;
+    } else if (page.isLastPage) {
+      return 1;
+    } else if (other.isLastPage) {
+      return -1;
+    } else {
+      return comparePagesOrder(page, other);
+    }
+  }
+
+  /// Defines an ordering of pages.
+  ///
+  /// the two pages are neither last pages. The ordering should depend on
+  /// either the items or the cursor of the two pages.
+  int comparePagesOrder(Page<T> page, Page<T> other);
 
   void _emit(ListState<T> state) {
     // Although it would be possible to just listen to `_states` stream and
