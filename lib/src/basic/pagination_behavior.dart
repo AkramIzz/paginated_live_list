@@ -59,7 +59,8 @@ class _PaginationBehaviorState<T> extends State<PaginationBehavior<T>> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     controller = Provider.of<PaginationController<T>>(context)!;
-    subscriptionsHandler = WidgetAwarePagesSubscriptionsHandler(controller);
+    subscriptionsHandler =
+        Provider.of<WidgetAwarePagesSubscriptionsHandler<T>>(context)!;
   }
 
   bool _shouldLoadMore() {
