@@ -1,6 +1,6 @@
 name: paginated_live_list
-description: A Paginated Live List Widget
-version: 0.1.0
+description: pagination of data and real-time updates with emphasis on resources effeciency
+version: 0.2.0
 homepage: https://github.com/AkramIzz/paginated_live_list
 
 environment:
